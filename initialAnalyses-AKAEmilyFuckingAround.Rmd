@@ -14,8 +14,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 pokemon<-read.csv("pokemon_alopez247.csv")
 #plot(pokemon)
-#plot(pokemon$Name~pokemon$Type_1)
-#plot(pokemon$Name~. , data = pokemon, col = "cyan")
+plot(pokemon$Name~pokemon$Type_1)
+plot(pokemon$Name~. , data = pokemon, col = "blueviolet")
 #look at all those tasty graphs
 
 ```
@@ -27,7 +27,20 @@ linmod <- lm(pokemon$Total~pokemon$HP+pokemon$Attack+pokemon$Defense)
 summary(linmod)
 #plot(linmod)
 plot(pokemon$HP+pokemon$Attack+pokemon$Defense, pokemon$Total)
-abline(linmod, h = 0.5, col = "blue")
+abline(linmod, h = 0.5, col = "red")
 #mmmm tasty sig values
 ```
+
+
+First attempt at Clustering
+```{r}
+eucdist<-dist(pokemon, method="euclidean")
+clusPokemon<-hclust(eucdist, method = "single")
+plot(clusPokemon)
+clusPokemonAvg<-hclust(eucdist, method = "average")
+plot(clusPokemonAvg)
+clusComplete<-hclust(eucdist, method = "complete")
+plot(clusComplete)
+```
+
 
