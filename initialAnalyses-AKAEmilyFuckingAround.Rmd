@@ -14,9 +14,10 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 pokemon<-read.csv("pokemon_alopez247.csv")
 #plot(pokemon)
-plot(pokemon$Name~pokemon$Type_1)
-plot(pokemon$Name~. , data = pokemon, col = "blueviolet")
+#plot(pokemon$Name~pokemon$Type_1)
+#plot(pokemon$Name~. , data = pokemon, col = "blueviolet")
 #look at all those tasty graphs
+summary(pokemon)
 
 ```
 
@@ -42,5 +43,8 @@ plot(clusPokemonAvg)
 clusComplete<-hclust(eucdist, method = "complete")
 plot(clusComplete)
 ```
+
+
+
 
 
