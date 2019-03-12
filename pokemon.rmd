@@ -1,0 +1,47 @@
+---
+title: "Pokemon"
+author: "Barret Jackson"
+date: "March 11, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+See what a regression tree looks like using total as the predictor and hp, attack, defense, sp_atk, sp_def, and speed as predictors.
+```{r}
+pokemon<-read.csv("pokemon_alopez247.csv")
+library(tree)
+poke<-data.frame(pokemon)
+attach(poke)
+pocl<-tree(Total~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke)
+plot(pocl)
+text(pocl)
+```
+
+Now let's try pruning it back
+
+```{r}
+cv.pocl<-cv.tree(pocl, FUN=prune.tree)
+plot(cv.pocl,type="b")
+p.pocl<-prune.tree(pocl,best=10)
+plot(p.pocl)
+text(p.pocl)
+summary(p.pocl)
+```
+
+Looks like pruning was unnecessary since the lowest MSE is with 12 nodes...
+
+How about with bagging...
+
+```{r}
+library(randomForest)
+set.seed(1995)
+pokebag<-randomForest(Total~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke,mtry=6,importance=FALSE)
+pokebag
+```
+Random forest where m=3
+```{r}
+pokeRF<-randomForest(Total~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke,mtry=3,importance=TRUE)
+pokeRF
+```
