@@ -98,6 +98,13 @@ train<-sample(1:nrow(poke),432)
 poke.test<-poke[-train,]
 poke.train<-poke[train,]
 ```
+I'm going to create a tree using a training data set and see how it performs against testing data.
+```{r}
+tree.pokemon<-tree(isLegendary~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke.train)
+tree.pred<-predict(tree.pokemon,poke.test,type="class")
+table(tree.pred,poke.test$isLegendary)
+```
+
 
 Emily's training/testing set
 ```{r}
@@ -109,4 +116,21 @@ test_indices <- (round(0.6 * n) + 1):n
 test <- shuffled_df[test_indices, ]
 train
 test
+```
+
+##LDA/QDA on isLegendary
+
+Let's try out LDA
+
+```{r}
+library(MASS)
+lda.poke<-lda(isLegendary~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke.train)
+lda.poke
+```
+
+
+```{r}
+length(isLegendary)
+length(HP)
+length(hasGender)
 ```
