@@ -45,3 +45,47 @@ Random forest where m=3
 pokeRF<-randomForest(Total~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke,mtry=3,importance=TRUE)
 pokeRF
 ```
+Now for a classification tree. Check out isLegendary as the response from the previous predictors.
+
+```{r}
+pokeclass<-tree(isLegendary~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke)
+plot(pokeclass)
+text(pokeclass,pretty=0)
+```
+
+Now let's cross-validate.
+```{r}
+cv.pokeclass<-cv.tree(pokeclass, FUN=prune.misclass)
+plot(cv.pokeclass,type="b")
+```
+Cross-validation shows 4 terminal nodes makes for the best classifier
+```{r}
+p.pokeclass<-prune.misclass(pokeclass,best=4)
+plot(p.pokeclass)
+text(p.pokeclass, pretty=0)
+summary(p.pokeclass)
+cv.pokeclass
+pokeclass.pred<-predict(p.pokeclass,type="class")
+
+table(isLegendary,pokeclass.pred)
+```
+
+
+Now let's try using bagging on the model.
+```{r}
+library(randomForest)
+set.seed(1995)
+bag.pokeclass<-randomForest(isLegendary~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke,mtry=6,importance=TRUE)
+bag.pokeclass
+importance(bag.pokeclass)
+```
+
+Looks like lots of false positives with this model. Let's try using random forest with m=3
+
+```{r}
+rf.pokeclass<-randomForest(isLegendary~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke,mtry=3,importance=TRUE)
+rf.pokeclass
+importance(rf.pokeclass)
+```
+
+Even worse for false positives using random forest.
