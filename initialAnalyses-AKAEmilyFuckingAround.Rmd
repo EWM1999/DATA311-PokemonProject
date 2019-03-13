@@ -21,6 +21,15 @@ summary(pokemon)
 
 ```
 
+Let's get some insight into the data in general. For example, lets look at a graph of the number of pokemon per type.
+
+```{r}
+library(ggplot2)
+type<-ggplot(pokemon, aes(pokemon$Type_1, fill = pokemon$Type_1)) + geom_histogram(stat="count", color = "black") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+type
+```
+
+
 Let's try fitting a linear model with the response variable total and predictors HP, Attack, and Defense.
 
 ```{r}
@@ -163,4 +172,8 @@ Now lets try logistic regression
 simlog<-glm(factor(poke.train$isLegendary)~poke.train$hasGender+poke.train$Total, family = "binomial")
 table(predict(simlog, type = "response")>0.5, poke.train$isLegendary)
 ```
+
+
+
+
 
