@@ -83,3 +83,16 @@ pokeRF<-randomForest(Total~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke,mtry=
 pokeRF
 ```
 
+
+Before we get too far along, let's split up the data into training and testing sets
+```{r}
+n <- nrow(pokemon)
+shuffled_df <- pokemon[sample(n), ]
+train_indices <- 1:round(0.6 * n)
+train <- shuffled_df[train_indices, ]
+test_indices <- (round(0.6 * n) + 1):n
+test <- shuffled_df[test_indices, ]
+train
+test
+```
+
