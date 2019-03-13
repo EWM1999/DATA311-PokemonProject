@@ -93,7 +93,7 @@ Before we get too far along, let's split up the data into training and testing s
 #test_indices <- (round(0.6 * n) + 1):n
 #test <- shuffled_df[test_indices, ]
 set.seed(1995)
-train<-sample(1:nrow(poke),432)
+train<-sample(1:nrow(pokemon),432)
 poke.test<-pokemon[-train,]
 poke.train<-pokemon[train,]
 
@@ -128,4 +128,39 @@ plot2
 
 This plot shows that most legendary pokemon do not have a gender.
 
+Let's try analyzing via LDA
+
+```{r}
+library(MASS)
+library(MLmetrics)
+poke.train$hasGender<-factor(poke.train$hasGender)
+poke.train$isLegendary<-factor(poke.train$isLegendary)
+pokelda<-lda(poke.train$isLegendary~poke.train$hasGender+poke.train$Total)
+table(poke.train$isLegendary, predict(pokelda)$class)
+Sensitivity(poke.train$isLegendary, predict(pokelda)$class)
+Recall(poke.train$isLegendary, predict(pokelda)$class) #same as sensitivity
+Precision(poke.train$isLegendary, predict(pokelda)$class)
+Specificity(poke.train$isLegendary, predict(pokelda)$class)
+F1_Score(poke.train$isLegendary, predict(pokelda)$class)
+```
+
+Now let's try qda
+
+```{r}
+
+pokeqda<-qda(poke.train$isLegendary~poke.train$hasGender+poke.train$Total)
+table(poke.train$isLegendary, predict(pokeqda)$class)
+Sensitivity(poke.train$isLegendary, predict(pokelda)$class)
+Recall(poke.train$isLegendary, predict(pokeqda)$class) #same as sensitivity
+Precision(poke.train$isLegendary, predict(pokeqda)$class)
+Specificity(poke.train$isLegendary, predict(pokeqda)$class)
+F1_Score(poke.train$isLegendary, predict(pokeqda)$class)
+```
+
+Now lets try logistic regression
+
+```{r}
+simlog<-glm(factor(poke.train$isLegendary)~poke.train$hasGender+poke.train$Total, family = "binomial")
+table(predict(simlog, type = "response")>0.5, poke.train$isLegendary)
+```
 
