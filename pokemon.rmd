@@ -55,6 +55,7 @@ text(pokeclass,pretty=0)
 
 Now let's cross-validate.
 ```{r}
+set.seed(1995)
 cv.pokeclass<-cv.tree(pokeclass, FUN=prune.misclass)
 plot(cv.pokeclass,type="b")
 ```
@@ -89,3 +90,23 @@ importance(rf.pokeclass)
 ```
 
 Even worse for false positives using random forest.
+
+My training/testing set
+```{r}
+set.seed(1995)
+train<-sample(1:nrow(poke),432)
+poke.test<-poke[-train,]
+poke.train<-poke[train,]
+```
+
+Emily's training/testing set
+```{r}
+n <- nrow(pokemon)
+shuffled_df <- pokemon[sample(n), ]
+train_indices <- 1:round(0.6 * n)
+train <- shuffled_df[train_indices, ]
+test_indices <- (round(0.6 * n) + 1):n
+test <- shuffled_df[test_indices, ]
+train
+test
+```
