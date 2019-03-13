@@ -86,13 +86,46 @@ pokeRF
 
 Before we get too far along, let's split up the data into training and testing sets
 ```{r}
-n <- nrow(pokemon)
-shuffled_df <- pokemon[sample(n), ]
-train_indices <- 1:round(0.6 * n)
-train <- shuffled_df[train_indices, ]
-test_indices <- (round(0.6 * n) + 1):n
-test <- shuffled_df[test_indices, ]
-train
-test
+#n <- nrow(pokemon)
+#shuffled_df <- pokemon[sample(n), ]
+#train_indices <- 1:round(0.6 * n)
+#train <- shuffled_df[train_indices, ]
+#test_indices <- (round(0.6 * n) + 1):n
+#test <- shuffled_df[test_indices, ]
+set.seed(1995)
+train<-sample(1:nrow(poke),432)
+poke.test<-pokemon[-train,]
+poke.train<-pokemon[train,]
+
 ```
+
+
+Now, let's try to predict if a pokemon is legendary. I would assume that pokemon with a high total are legendary and after taking a peek at the data, it looks like most legendary pokemon do not have a gender. Let's see if this holds true in general.
+
+```{r}
+#https://www.kaggle.com/excaliburzero/predicting-legendary-pokemon
+maxTotal<-order(poke.train$Total, decreasing = TRUE)
+head(poke.train[maxTotal,])
+```
+
+This looks like if we have a high total the pokemon is most likely legendary. Let's graph it to see if it holds true
+
+```{r}
+library(ggplot2)
+plot<-ggplot(poke.train, aes(x =Total, fill = isLegendary)) + geom_histogram()
+plot
+```
+
+From this graph we can see that the higher the total the more likely a pokemon is to be legendary. In fact, it appears that a pokemon is only legendary when it is above 650 in total and most likely legendary from around 550-625
+
+Now let's look at gender correlation
+
+```{r}
+poke.train$hasGender<-factor(poke.train$hasGender)
+plot2<-ggplot(poke.train, aes(x =hasGender, fill = isLegendary)) + geom_bar()
+plot2
+```
+
+This plot shows that most legendary pokemon do not have a gender.
+
 
