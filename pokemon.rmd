@@ -79,6 +79,8 @@ set.seed(1995)
 bag.pokeclass<-randomForest(isLegendary~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke,mtry=6,importance=TRUE)
 bag.pokeclass
 importance(bag.pokeclass)
+varImpPlot(bag.pokeclass)
+
 ```
 
 Looks like lots of false positives with this model. Let's try using random forest with m=3
@@ -87,6 +89,7 @@ Looks like lots of false positives with this model. Let's try using random fores
 rf.pokeclass<-randomForest(isLegendary~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke,mtry=3,importance=TRUE)
 rf.pokeclass
 importance(rf.pokeclass)
+varImpPlot(rf.pokeclass)
 ```
 
 Even worse for false positives using random forest.
@@ -128,9 +131,37 @@ lda.poke<-lda(isLegendary~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke.train)
 lda.poke
 ```
 
+Looking good, let's see how it does on prediction.
+```{r}
+lda.pred<-predict(lda.poke,poke.test$isLegendary)
+table(isLegendary,lda.pred$class)
+```
+
+Alright, qda now.
+```{r}
+qda.poke<-qda(isLegendary~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke.train)
+qda.poke
+
+```
+
+Exactly the same as lda...
+
+I think this next bit is logreg?
 
 ```{r}
-length(isLegendary)
-length(HP)
-length(hasGender)
+log.poke <- glm(isLegendary~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed , family="binomial")
+table(predict(log.poke, type="response") > 0.5, isLegendary)
+summary(log.poke)
 ```
+
+Holy shit, log reg gives the best predictions here.
+
+I'm gonna try calculating logloss now
+```{r}
+LogLoss(predict(lda.poke)$posterior[,2], as.numeric(poke.train$isLegendary)-1)
+LogLoss(predict(qda.poke)$posterior[,2], as.numeric(poke.train$isLegendary)-1)
+LogLoss(predict(log.poke), as.numeric(isLegendary)-1)
+
+```
+
+Logreg had the highest log loss, if I'm calculating this correctly(?).
