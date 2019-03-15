@@ -1,0 +1,43 @@
+---
+title: "Lasso"
+author: "Kat"
+date: '2019-03-15'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+pokemon<-read.csv("pokemon_alopez247.csv")
+#plot(pokemon)
+#plot(pokemon$Name~pokemon$Type_1)
+#plot(pokemon$Name~. , data = pokemon, col = "cyan")
+#look at all those tasty graphs
+```
+
+##LASSO
+
+Let's try using LASSO to remove predictors from the linear model
+
+
+
+```{r}
+library(glmnet)
+set.seed(53342)
+pkmn<-data.frame(pokemon, stringsAsFactors = TRUE)
+pkmn[is.na(pkmn)] <- 0
+x <- data.matrix(pkmn)[,-13]
+y <- as.integer(as.logical(pkmn$isLegendary))
+grid<-exp(seq(-2,-10,length=100))
+lassomod<-cv.glmnet(x,y, family = "binomial", alpha=1, lambda = grid)
+plot(lassomod)
+plot(lassomod$glmnet.fit, label=TRUE, xvar="lambda")
+lammin <- lassomod$lambda.min
+lam1se <- lassomod$lambda.1se
+lasimmin <- glmnet(x,y,alpha = 1, lambda=lammin)
+lasim1se <- glmnet(x,y,alpha = 1, lambda=lam1se)
+#coef(lasimmin)
+#coef(lasim1se)
+```
