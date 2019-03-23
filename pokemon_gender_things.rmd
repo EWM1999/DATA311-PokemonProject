@@ -1,0 +1,123 @@
+---
+title: "Pokemon - Gender things"
+author: "Barret Jackson"
+date: "March 22, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Creating a subset with only pokemon that have a gender
+
+```{r}
+pokemon<-read.csv("pokemon_alopez247.csv")
+poke<-data.frame(pokemon)
+attach(poke)
+poke1<-poke[which(hasGender=='True'),]
+head(poke1)
+length(poke1[,1])
+```
+
+##Trees on the new data set
+
+```{r}
+attach(poke1)
+library(tree)
+pocl<-tree(Pr_Male~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke1)
+plot(pocl)
+text(pocl)
+```
+
+Ok, let's prune this tree down now...
+
+```{r}
+j<-sample(0,10000,100)
+size<-{}
+for(i in 1:100) {
+  set.seed(i)
+  cv.pocl<-cv.tree(pocl, FUN=prune.tree)
+  thing<-cv.pocl$size[which.min(cv.pocl$dev)]
+  size[i]<-thing
+}
+hist(size)
+sort(table(size),decreasing=TRUE)[1:3]
+```
+
+```{r}
+p.pocl<-prune.tree(pocl,best=3)
+plot(p.pocl)
+text(p.pocl)
+summary(p.pocl)
+```
+
+Alright, let's use bagging now...
+
+```{r}
+library(randomForest)
+set.seed(1995)
+pokebag<-randomForest(Pr_Male~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke1,mtry=6,importance=TRUE)
+pokebag
+varImpPlot(pokebag)
+```
+
+Well that didn't work out very well...
+
+How about random forest...
+
+```{r}
+pokeRF<-randomForest(Pr_Male~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke1,mtry=3,importance=TRUE)
+pokeRF
+varImpPlot(pokeRF)
+```
+Very slightly better, still not a lot of evidence that this model is any good.
+
+##PCA
+
+Alright, let's check out PCA on Pr_Male response with ...stats as predictors
+
+```{r}
+head(poke)
+```
+
+```{r}
+pcapoke <- prcomp(as.matrix(poke[,6:11]), scale.=TRUE)
+summary(pcapoke)
+biplot(pcapoke)
+```
+
+Ok cool, two principal components satisfy the Kaiser criterion. Let's take a look at which predictors influence these components...
+
+```{r}
+round(pcapoke$rotation[,1:2], 2)
+```
+
+Ok, so looks like PC1 refers to kind of all around, balanced pokemon, and PC2 refers to slow defenders with bad HP? I don't think this model is all that great... But, let's see which pokemon each component is referring to.
+
+```{r}
+poke[order(pcapoke$x[,1], decreasing=TRUE)[1:4] , 1:11]
+```
+
+```{r}
+poke[order(pcapoke$x[,2], decreasing=TRUE)[1:4] , 1:11]
+```
+
+The first component doesn't really seem to refer to much at all, just kind of all around generalists maybe. The totals are quite high though, so maybe these are the powerhouses? Wait, let's see how many of them are legendary...
+
+```{r}
+poke[order(pcapoke$x[,1], decreasing=TRUE)[1:20],]
+```
+
+
+The first 13 are legendary, this is a good sign. Let's see how PC1 correlates with isLegendary...
+
+```{r}
+library(MASS)
+pcleg<-data.frame(pcapoke$x)
+pcleg[1:20,]
+leglda <- lda(factor(poke$isLegendary)~PC1+PC2,data=pcleg)
+leglda
+```
+
+I might just be high, but I'm pretty sure this indicates PC1 is a pretty good predictor for isLegendary. PC2 doesn't really seem to refer to anything here...
