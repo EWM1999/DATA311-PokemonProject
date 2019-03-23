@@ -174,6 +174,66 @@ table(predict(simlog, type = "response")>0.5, poke.train$isLegendary)
 ```
 
 
+I'm going to see how many legendary pokemon there are per generation and per type. As a refresher here is the number of pokemon per type in this dataset
+```{r}
+library(ggplot2)
+type<-ggplot(pokemon, aes(pokemon$Type_1, fill = pokemon$Type_1)) + geom_histogram(stat="count", color = "black") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+type
+```
 
+```{r}
+library(wesanderson)
+#https://www.kaggle.com/excaliburzero/predicting-legendary-pokemon
+poke<-data.frame(pokemon)
+pokeLegend<-poke[which(isLegendary=='True'),]
+plot(Generation~isLegendary)
+TheLegends<-as.data.frame(table(pokeLegend$Generation))
+colnames(TheLegends)<-c("Generation", "Legends")
+TheLegends
+summary(TheLegends)
+plot<-ggplot(TheLegends, aes(Generation, Legends))+geom_bar(stat="identity")
+plot
+#color=scale_fill_manual(values=wes_palette("FantasticFox1"))
+TheMan<-as.data.frame(table(pokeLegend$Type_1))
+colnames(TheMan)<-c("Type 1", "Legends")
+TheMan
+summary(TheMan)
+plot(TheMan)
+maxTotalL<-order(TheMan$Legends, decreasing = TRUE)
+head(TheMan[maxTotalL,])
+
+#Of Type 2
+TheMyth<-as.data.frame(table(pokeLegend$Type_2))
+colnames(TheMyth)<-c("Type 2", "Legends")
+TheMyth
+summary(TheMyth)
+plot(TheMyth)
+maxTotalL2<-order(TheMyth$Legends, decreasing = TRUE)
+head(TheMyth[maxTotalL2,])
+```
+
+
+Thanks to @Barret we can now subset the data
+
+```{r}
+poke<-data.frame(pokemon)
+poke1<-poke[which(hasGender=='True'),]
+attach(poke)
+head(poke1)
+```
+
+Let's see if there is a relationship between score and gender
+
+```{r}
+set.seed(983457)
+pokeG<-tree(Pr_Male~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed + Total,data=poke1)
+plot(pokeG)
+text(pokeG, pretty=0)
+cv.pokeG<-cv.tree(pokeG, FUN=prune.tree)
+plot(cv.pokeG)
+prunePokeG<-prune.tree(pokeG, best=12)
+plot(prunePokeG)
+text(prunePokeG, pretty=0)
+```
 
 
