@@ -1,0 +1,86 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#laurenedits
+
+```{r}
+data = read.csv("pokemon_alopez247.csv", header=T)
+```
+
+```{r}
+summary(data)
+```
+
+```{r}
+library(scatterplot3d) 
+attach(pokemon) 
+scatterplot3d(Defense,HP,hasGender, pch=16, highlight.3d=TRUE,
+  type="h", main="3D Scatterplot")
+```
+
+```{r}
+library(scatterplot3d) 
+attach(pokemon) 
+scatterplot3d(HP,Defense,Pr_Male, pch=16, highlight.3d=TRUE,
+  type="h", main="3D Scatterplot")
+```
+
+```{r}
+library(scatterplot3d)
+attach(pokemon)
+scatterplot3d(Defense,HP,Pr_Male, main="3D Scatterplot")
+```
+
+```{r}
+library(gclus)
+dta <- pokemon[c(5,6,7,8)] # data, numbers as column numbers 
+dta.r <- abs(cor(dta)) # correlation
+dta.col <- dmat.color(dta.r) # colors
+dta.o <- order.single(dta.r) 
+cpairs(dta, dta.o, panel.colors=dta.col, gap=.5,
+main="Variables Ordered and Colored by Correlation" )
+```
+
+```{r}
+library(neuralnet)
+attach(pokemon)
+scale() 
+NN <- neuralnet(HP~Defense, data=pokemon, hidden = 0)
+sum((predict(NN, data.frame(Defense))~HP)^2)
+```
+
+shreeves@alumni.ubc.ca
+
+Cannot do this:
+NN <- neuralnet(HP~hasGender, data=pokemon, hidden = 0)
+  as it is not numeric, but is binary 
+
+Cannot do this:
+NN = neauralnet(Number ~ Name + Type_1 + Type_2 + Total + HP + Attack + Defense + Sp_Attk + Sp_Def + Speed + Generation + isLegendary + Color + hasGender + Pr_Male + Egg_Group_1 + Egg_Group_2 + hasMegaEvolution + Height_m + Weight_kg + Catch_Rate + Body_Style, data=pokemon, hidden = 0)
+plot(NN) as these are non-numeric responses
+
+```{r}
+library(neuralnet)
+trainNN = scaled[index,]
+testNN = scaled[-index,]
+set.seed(2)
+NN = neauralnet(Number ~ Name + Type_1 + Type_2 + Total + HP + Attack + Defense + Sp_Attk + Sp_Def + Speed + Generation + isLegendary + Color + hasGender + Pr_Male + Egg_Group_1 + Egg_Group_2 + hasMegaEvolution + Height_m + Weight_kg + Catch_Rate + Body_Style)
+plot(NN)
+```
+
+
+**ERROR
+```{r}
+pokemon <- read.csv("~/pokemon_alopez247.csv", stringsAsFactors = FALSE)
+#remove NA
+cleanPoke <- na.omit(pokemon)
+pcPoke <- prcomp(as.matrix(cleanPoke[,c(6,8,16)]), scale. = TRUE)
+summary(pcPoke)
+```
+
