@@ -47,40 +47,57 @@ cpairs(dta, dta.o, panel.colors=dta.col, gap=.5,
 main="Variables Ordered and Colored by Correlation" )
 ```
 
+**Running into errors here, will double check with TA 
 ```{r}
 library(neuralnet)
-attach(pokemon)
-scale() 
-NN <- neuralnet(HP~Defense, data=pokemon, hidden = 0)
-sum((predict(NN, data.frame(Defense))~HP)^2)
-```
-
-shreeves@alumni.ubc.ca
-
-Cannot do this:
-NN <- neuralnet(HP~hasGender, data=pokemon, hidden = 0)
-  as it is not numeric, but is binary 
-
-Cannot do this:
-NN = neauralnet(Number ~ Name + Type_1 + Type_2 + Total + HP + Attack + Defense + Sp_Attk + Sp_Def + Speed + Generation + isLegendary + Color + hasGender + Pr_Male + Egg_Group_1 + Egg_Group_2 + hasMegaEvolution + Height_m + Weight_kg + Catch_Rate + Body_Style, data=pokemon, hidden = 0)
-plot(NN) as these are non-numeric responses
-
-```{r}
-library(neuralnet)
+pokemon <- read.csv("~/pokemon_alopez247.csv", stringsAsFactors = FALSE)
+clean <- as.numeric(c(2, 3, 4, 12, 13, 14, 15, 16, 17, 18, 19, 23))
+cleanPoke <- na.omit(clean)
+scaled <- scale(cleanPoke)
 trainNN = scaled[index,]
 testNN = scaled[-index,]
-set.seed(2)
+set.seed(27)
 NN = neauralnet(Number ~ Name + Type_1 + Type_2 + Total + HP + Attack + Defense + Sp_Attk + Sp_Def + Speed + Generation + isLegendary + Color + hasGender + Pr_Male + Egg_Group_1 + Egg_Group_2 + hasMegaEvolution + Height_m + Weight_kg + Catch_Rate + Body_Style)
 plot(NN)
 ```
 
 
-**ERROR
 ```{r}
 pokemon <- read.csv("~/pokemon_alopez247.csv", stringsAsFactors = FALSE)
-#remove NA
+#remove NA from dataset
 cleanPoke <- na.omit(pokemon)
 pcPoke <- prcomp(as.matrix(cleanPoke[,c(6,8,16)]), scale. = TRUE)
 summary(pcPoke)
 ```
 
+```{r}
+biplot(pcPoke)
+```
+
+```{r}
+plot(pcPoke$x[,1:2])
+```
+
+```{r}
+plot(pcPoke$x[,1:2], type="n")
+text(pcPoke$x[,1], pcPoke$x[,2], labels = 1:nrow(pokemon))
+```
+
+```{r}
+round(pcPoke$rotation[,1:2], 2)
+```
+
+```{r}
+pokemon[order(pcPoke$x[,1], decreasing=TRUE)[1:4], 1:3]
+```
+
+```{r}
+test1 <- hclust(dist(scale(pokemon[,-c(2, 3, 4, 12, 13, 14, 15, 16, 17, 18, 19, 23)])))
+plot(test1)
+test2 <- hclust(dist(pcPoke$x))
+plot(test2)
+```
+
+```{r}
+all.equal(dist(scale(pokemon[,-c(2, 3, 4, 12, 13, 14, 15, 16, 17, 18, 19, 23)])), dist(pcPoke$x), check.attributes = FALSE)
+```
