@@ -47,18 +47,31 @@ cpairs(dta, dta.o, panel.colors=dta.col, gap=.5,
 main="Variables Ordered and Colored by Correlation" )
 ```
 
-**Running into errors here, will double check with TA 
 ```{r}
-library(neuralnet)
-pokemon <- read.csv("~/pokemon_alopez247.csv", stringsAsFactors = FALSE)
-clean <- as.numeric(c(2, 3, 4, 12, 13, 14, 15, 16, 17, 18, 19, 23))
-cleanPoke <- na.omit(clean)
-scaled <- scale(cleanPoke)
-trainNN = scaled[index,]
-testNN = scaled[-index,]
-set.seed(27)
-NN = neauralnet(Number ~ Name + Type_1 + Type_2 + Total + HP + Attack + Defense + Sp_Attk + Sp_Def + Speed + Generation + isLegendary + Color + hasGender + Pr_Male + Egg_Group_1 + Egg_Group_2 + hasMegaEvolution + Height_m + Weight_kg + Catch_Rate + Body_Style)
-plot(NN)
+set.seed(763)
+library(tree)
+trainindex <- sample(1:nrow(pokemon), 721)
+proftrain <- salaries[trainindex, ]
+proftest <- salaries[-trainindex, ]
+predictTotal <- tree(Total~., data=proftrain)
+plot(predictTotal)
+text(predictTotal, pretty=0)
+predict(predictTotal, proftest)
+mean((predict(predictTotal, proftest) - proftest$Total)^2)
+summary(predictTotal)
+```
+
+
+```{r}
+library(nnet)
+library(NeuralNetTools)
+set.seed(53747958)
+numeric_col <- c(5:12, 16, 20:21)
+pokemon[,numeric_col] <- scale(pokemon[,numeric_col])
+colnames(data)[22]<-"Pr_Male"
+nnpokemon<-nnet(Pr_Male~., data = data, size = 1)
+plotnet(nnpokemon)
+mean(nnpokemon$residuals^2)
 ```
 
 
