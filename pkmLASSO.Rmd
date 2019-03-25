@@ -1,0 +1,93 @@
+---
+title: "Lasso"
+author: "Kat"
+date: '2019-03-15'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+pokemon<-read.csv("pokemon_alopez247.csv")
+#plot(pokemon)
+#plot(pokemon$Name~pokemon$Type_1)
+#plot(pokemon$Name~. , data = pokemon, col = "cyan")
+#look at all those tasty graphs
+```
+
+##LASSO
+
+Let's try using LASSO to remove predictors from the linear model
+
+
+
+```{r}
+library(glmnet)
+set.seed(53342)
+pkmn<-data.frame(pokemon, stringsAsFactors = TRUE)
+pkmn[is.na(pkmn)] <- 0
+x <- data.matrix(pkmn)[,-13]
+y <- as.integer(as.logical(pkmn$isLegendary))
+grid<-exp(seq(-1.5,-8.5,length=100))
+lassomod<-cv.glmnet(x,y, family = "binomial", alpha=1, lambda = grid)
+plot(lassomod)
+plot(lassomod$glmnet.fit, label=TRUE, xvar="lambda")
+lammin <- lassomod$lambda.min
+lam1se <- lassomod$lambda.1se
+lasimmin <- glmnet(x,y,alpha = 1, lambda=lammin)
+lasim1se <- glmnet(x,y,alpha = 1, lambda=lam1se)
+#coef(lasimmin)
+#coef(lasim1se)
+```
+
+
+
+```{r}
+library(glmnet)
+set.seed(53342)
+pkmn<-data.frame(pokemon, stringsAsFactors = TRUE)
+pkmn[is.na(pkmn)] <- -1
+x <- data.matrix(pkmn)[,-15]
+y <- as.integer(as.logical(pkmn$hasGender))
+grid<-exp(seq(-300,-400,length=200))
+lassomod<-cv.glmnet(x,y, family = "binomial", alpha=1, lambda = grid)
+plot(lassomod)
+plot(lassomod$glmnet.fit, label=TRUE, xvar="lambda")
+lammin <- lassomod$lambda.min
+lam1se <- lassomod$lambda.1se
+lasimmin <- glmnet(x,y,alpha = 1, lambda=lammin)
+lasim1se <- glmnet(x,y,alpha = 1, lambda=lam1se)
+```
+
+This just continuously goes to $-infinity$ so there is no way to optimize this.
+
+
+```{r}
+poke0<-data.frame(pokemon)
+poke1<-poke0[which(poke$hasGender=='True'),]
+attach(poke0)
+head(poke1)
+x <- data.matrix(poke1)[,-16]
+y <- poke1$Pr_Male
+grid<-exp(seq(-1,-9,length=150))
+lassomod<-cv.glmnet(x,y, alpha=1, lambda = grid)
+plot(lassomod)
+plot(lassomod$glmnet.fit, label=TRUE, xvar="lambda")
+lammin <- lassomod$lambda.min
+lam1se <- lassomod$lambda.1se
+lasimmin <- glmnet(x,y,alpha = 1, lambda=lammin)
+lasim1se <- glmnet(x,y,alpha = 1, lambda=lam1se)
+```
+
+```{r}
+coef(lasimmin)
+```
+
+```{r}
+coef(lasim1se)
+```
+
+One thing to note is that this appears to have a large standard deviation.... The true minimum is at 19 variables but one standard deviation from that gives ~8 variables.
+
