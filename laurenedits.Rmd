@@ -20,7 +20,7 @@ summary(data)
 ```{r}
 library(scatterplot3d) 
 attach(pokemon) 
-scatterplot3d(HP,Defense,Pr_Male, pch=16, highlight.3d=TRUE,
+sp <- scatterplot3d(HP,Defense,Pr_Male, pch=16, highlight.3d=TRUE,
   type="h", main="3D Scatterplot")
 ```
 
@@ -32,26 +32,14 @@ scatterplot3d(Defense,HP,Pr_Male, main="3D Scatterplot")
 
 ```{r}
 library(gclus)
-dta <- pokemon[c(5,6,7,8)] # data, numbers as column numbers 
+dta <- pokemon[c(5:8)] # data, numbers as column numbers 
+#dta <- pokemon[c(5:8, 16)]
 dta.r <- abs(cor(dta)) # correlation
 dta.col <- dmat.color(dta.r) # colors
+#dta.r[is.na(dta.r)] <- 0.5
 dta.o <- order.single(dta.r) 
-cpairs(dta, dta.o, panel.colors=dta.col, gap=.5,
+cpairs(dta, dta.o, panel.csolors=dta.col, gap=.5,
 main="Variables Ordered and Colored by Correlation" )
-```
-
-```{r}
-set.seed(763)
-library(tree)
-trainindex <- sample(1:nrow(pokemon), 721)
-proftrain <- salaries[trainindex, ]
-proftest <- salaries[-trainindex, ]
-predictTotal <- tree(Total~., data=proftrain)
-plot(predictTotal)
-text(predictTotal, pretty=0)
-predict(predictTotal, proftest)
-mean((predict(predictTotal, proftest) - proftest$Total)^2)
-summary(predictTotal)
 ```
 
 Neural net testing isLegendary w/ all
@@ -70,6 +58,7 @@ mean(nnpokemon$residuals^2)
 Neural net testing isLgendary w/ Defense+Pr_Male+Attack+HP
 ```{r}
 library(nnet)
+library(neuralnet)
 library(NeuralNetTools)
 set.seed(53747958)
 numeric_col <- c(5:12, 16, 20:21)
@@ -77,7 +66,7 @@ pokemon[,numeric_col] <- scale(pokemon[,numeric_col])
 trainset <- pokemon[1:505, ]
 testset <- pokemon[506:721, ]
 colnames(data)[22]<-"Pr_Male"
-nnpokemon<-neuralnet(isLegendary~Defense+Pr_Male+Attack+HP,data=pokemon, hidden=3,act.fct = "logistic",
+nnpokemon<-neuralnet(isLegendary~Defense+Pr_Male+Attack+HP,data=pokemon, hidden=2,act.fct = "logistic",
                 linear.output = FALSE)
 plotnet(nnpokemon)
 ```
