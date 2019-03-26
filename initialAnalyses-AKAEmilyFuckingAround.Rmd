@@ -39,6 +39,7 @@ summary(linmod)
 plot(pokemon$HP+pokemon$Attack+pokemon$Defense, pokemon$Total)
 abline(linmod, h = 0.5, col = "red")
 #mmmm tasty sig values
+
 ```
 
 
@@ -136,6 +137,55 @@ plot2
 ```
 
 This plot shows that most legendary pokemon do not have a gender.
+
+Let see if there are any linear relations we can tease out. Name and number should have no effect on the data so I will exclude them from the start.
+
+```{r}
+# data<-poke.train[,3:23]
+# data[is.na(data)]<-0
+# data$hasGender<-factor(data$hasGender)
+# data$isLegendary<-factor(data$isLegendary)
+# data$Type_1<-factor(data$Type_1)
+# data$Type_2<-factor(data$Type_2)
+# data$Color<-factor(data$Color)
+# data$hasMegaEvolution<-factor(data$hasMegaEvolution)
+# data$Egg_Group_1<-factor(data$Egg_Group_1)
+# data$Egg_Group_2<-factor(data$Egg_Group_2)
+# data$Body_Style<-factor(data$Body_Style)
+# linmod2<-lm(Total~., data = data)
+# plot(linmod2)
+
+```
+
+Kmeans
+
+
+```{r}
+library(mclust)
+library(cluster)
+distPoke<-daisy(poke.train)
+summary(distPoke)
+pokeDist<-cmdscale(distPoke)
+plot(pokeDist, type = "n")
+text(pokeDist, rownames(pokeDist))
+set.seed(413)
+#kAnimals<-kmeans(dAnimals, 3)
+#plot(dAnimals, col = kAnimals$cluster)
+#points(kAnimals$centers, col = 1:3, pch=8, cex=2)
+
+kPoke2<-kmeans(pokeDist, 4, nstart=16)
+plot(pokeDist, col = kPoke2$cluster)
+points(kPoke2$centers, col = 1:4, pch=8, cex=2)
+#kAnimals$cluster
+table(rownames(poke.train), kPoke2$cluster)
+```
+
+KNN classification
+
+```{r}
+
+```
+
 
 Let's try analyzing via LDA
 
