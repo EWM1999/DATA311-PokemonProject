@@ -183,7 +183,9 @@ table(rownames(poke.train), kPoke2$cluster)
 KNN classification
 
 ```{r}
-
+library(class)
+knnrun<-knn.cv(pokeDist, cl = poke.train$isLegendary, k = 5, prob = TRUE)
+table(poke.train$isLegendary, knnrun)
 ```
 
 
