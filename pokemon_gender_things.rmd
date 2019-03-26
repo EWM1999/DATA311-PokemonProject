@@ -14,6 +14,14 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 pokemon<-read.csv("pokemon_alopez247.csv")
 poke<-data.frame(pokemon)
+# legenLog<-as.logical(as.integer(poke$isLegendary)-1)
+# genLog<-as.logical(as.integer(poke$hasGender)-1)
+# poke$isLegendary<-legenLog
+# poke$hasGender<-genLog
+```
+
+
+```{r}
 attach(poke)
 poke1<-poke[which(hasGender=='True'),]
 head(poke1)
@@ -121,3 +129,96 @@ leglda
 ```
 
 I might just be high, but I'm pretty sure this indicates PC1 is a pretty good predictor for isLegendary. PC2 doesn't really seem to refer to anything here...
+
+Ok, now let's run PCA on the subset that has a gender
+
+```{r}
+pcagenpoke <- prcomp(as.matrix(poke1[,6:11]), scale.=TRUE)
+summary(pcagenpoke)
+biplot(pcagenpoke)
+```
+
+Ok cool, two principal components satisfy the Kaiser criterion. Let's take a look at which predictors influence these components...
+
+```{r}
+round(pcagenpoke$rotation[,1:2], 2)
+```
+This is looking pretty similar to the full dataset! But, let's see which pokemon each component is referring to.
+
+```{r}
+poke[order(pcagenpoke$x[,1], decreasing=TRUE)[1:4] , 1:11]
+```
+
+
+```{r}
+poke[order(pcagenpoke$x[,2], decreasing=TRUE)[1:4] , 1:11]
+```
+
+The first component doesn't really seem to refer to much at all, just kind of all around generalists maybe. The totals are quite high though, so maybe these are the powerhouses? Wait, let's see how many of them are legendary...
+
+```{r}
+poke[order(pcagenpoke$x[,1], decreasing=TRUE)[1:20],]
+```
+
+
+The first 13 are legendary, this is a good sign. Let's see how PC1 correlates with isLegendary...
+
+```{r}
+library(MASS)
+pcgenleg<-data.frame(pcagenpoke$x)
+pcgenleg[1:20,]
+leggenlda <- lda(factor(poke1$isLegendary)~pcgenleg[,1]+pcgenleg[,2],data=pcgenleg)
+leggenlda
+```
+
+Ok now let's look at a classification table:
+
+```{r}
+lda.pred<-predict(leggenlda,poke1)
+lda.class<-lda.pred$class
+table(lda.class,poke1$isLegendary)
+```
+
+So LDA using PC1 and PC2 basically amounts to a naive classifier classifying everything "False" for isLegendary. Let's see if univariate LDA with PC1 only does any better.
+
+```{r}
+leggenlda1 <- lda(factor(poke1$isLegendary)~pcgenleg[,1],data=pcgenleg)
+leggenlda1
+```
+
+```{r}
+lda.pred<-predict(leggenlda1,poke1)
+lda.class<-lda.pred$class
+table(lda.class,poke1$isLegendary)
+```
+
+Yea, this is still a naive classifier, NOT VERY USEFUL!
+
+Let's try a linear model, see if PC1 and PC2 are any good at predicting Pr_Male:
+
+```{r}
+linmod<-lm(poke1$Pr_Male~pcgenleg[,1]+pcgenleg[,2])
+summary(linmod)
+
+linmod<-lm(poke1$Pr_Male~pcgenleg[,1])
+summary(linmod)
+
+plot(pcgenleg[,1],poke1$Pr_Male)
+abline(linmod)
+```
+
+Ok, so the second model is statistically significant. So let's try to interpret this now. The intercept on this linear model is 0.55, which is already above 50%. Oh man that graph looks like garbage. I don't think PCA really did anything here...
+
+
+```{r}
+# linmod<-lm(poke1$Catch_Rate~pcgenleg[,1]+pcgenleg[,2])
+# summary(linmod)
+
+linmod<-lm(poke1$Catch_Rate~pcgenleg[,1])
+summary(linmod)
+
+plot(pcgenleg[,1],poke1$Catch_Rate)
+abline(linmod)
+```
+
+Ok, now we're talking. So it looks like PC1 is correlated with the harder to catch Pokemon rather than the legendary ones. Probably a good time to start a new file, this is getting messy...
