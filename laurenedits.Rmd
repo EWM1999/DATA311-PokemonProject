@@ -20,13 +20,6 @@ summary(data)
 ```{r}
 library(scatterplot3d) 
 attach(pokemon) 
-scatterplot3d(Defense,HP,hasGender, pch=16, highlight.3d=TRUE,
-  type="h", main="3D Scatterplot")
-```
-
-```{r}
-library(scatterplot3d) 
-attach(pokemon) 
 scatterplot3d(HP,Defense,Pr_Male, pch=16, highlight.3d=TRUE,
   type="h", main="3D Scatterplot")
 ```
@@ -61,17 +54,53 @@ mean((predict(predictTotal, proftest) - proftest$Total)^2)
 summary(predictTotal)
 ```
 
-
+Neural net testing isLegendary w/ all
 ```{r}
 library(nnet)
 library(NeuralNetTools)
 set.seed(53747958)
 numeric_col <- c(5:12, 16, 20:21)
 pokemon[,numeric_col] <- scale(pokemon[,numeric_col])
-colnames(data)[22]<-"Pr_Male"
-nnpokemon<-nnet(Pr_Male~., data = data, size = 1)
+colnames(data)[22]<-"isLegendary"
+nnpokemon<-nnet(isLegendary~., data = data, size = 1)
 plotnet(nnpokemon)
 mean(nnpokemon$residuals^2)
+```
+
+Neural net testing isLgendary w/ Defense+Pr_Male+Attack+HP
+```{r}
+library(nnet)
+library(NeuralNetTools)
+set.seed(53747958)
+numeric_col <- c(5:12, 16, 20:21)
+pokemon[,numeric_col] <- scale(pokemon[,numeric_col])
+trainset <- pokemon[1:505, ]
+testset <- pokemon[506:721, ]
+colnames(data)[22]<-"Pr_Male"
+nnpokemon<-neuralnet(isLegendary~Defense+Pr_Male+Attack+HP,data=pokemon, hidden=3,act.fct = "logistic",
+                linear.output = FALSE)
+plotnet(nnpokemon)
+```
+
+
+```{r}
+test=data.frame(Defense,Pr_Male,Attack,HP)
+Predict=compute(nnpokemon,test)
+Predict$net.result
+```
+
+```{r}
+prob <- Predict$net.result
+pred <- ifelse(prob>0.5, 1, 0)
+pred
+```
+
+```{r}
+#Test the resulting output
+temp_test <- subset(testset, select = c("Defense","Pr_Male", "Attack", "HP"))
+head(temp_test)
+nn.results <- compute(nnpokemon, temp_test)
+results <- data.frame(actual = testset$isLegendary, prediction = nn.results$net.result)
 ```
 
 
@@ -79,7 +108,7 @@ mean(nnpokemon$residuals^2)
 pokemon <- read.csv("~/pokemon_alopez247.csv", stringsAsFactors = FALSE)
 #remove NA from dataset
 cleanPoke <- na.omit(pokemon)
-pcPoke <- prcomp(as.matrix(cleanPoke[,c(6,8,16)]), scale. = TRUE)
+pcPoke <- prcomp(as.matrix(cleanPoke[,c(5:8,16)]), scale. = TRUE)
 summary(pcPoke)
 ```
 
