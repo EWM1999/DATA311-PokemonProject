@@ -130,7 +130,7 @@ results
 pokemon <- read.csv("~/pokemon_alopez247.csv", stringsAsFactors = FALSE)
 #remove NA from dataset
 cleanPoke <- na.omit(pokemon)
-pcPoke <- prcomp(as.matrix(cleanPoke[,c(5:8,16)]), scale. = TRUE)
+pcPoke <- prcomp(as.matrix(cleanPoke[,c(6:11)]), scale. = TRUE)
 summary(pcPoke)
 ```
 
@@ -148,14 +148,15 @@ text(pcPoke$x[,1], pcPoke$x[,2], labels = 1:nrow(pokemon))
 ```
 
 ```{r}
-round(pcPoke$rotation[,1:5], 3)
+round(pcPoke$rotation[,1:2], 3)
 ```
 
 ```{r}
-pokemon[order(pcPoke$x[,1], decreasing=TRUE)[1:4], 1:3]
+pokemon[order(pcPoke$x[,1], decreasing=TRUE)[1:4], 1:11]
 plot(pcPoke, type="lines")
 abline(a=1, b=0, col="blue", lwd=3)
 ```
+
 
 ```{r}
 test1 <- hclust(dist(scale(pokemon[,-c(2, 3, 4, 12, 13, 14, 15, 16, 17, 18, 19, 23)])))
