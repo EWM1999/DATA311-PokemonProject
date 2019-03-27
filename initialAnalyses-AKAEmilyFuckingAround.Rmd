@@ -29,17 +29,34 @@ type<-ggplot(pokemon, aes(pokemon$Type_1, fill = pokemon$Type_1)) + geom_histogr
 type
 ```
 
+Before we get too far along, let's split up the data into training and testing sets
+```{r}
+#n <- nrow(pokemon)
+#shuffled_df <- pokemon[sample(n), ]
+#train_indices <- 1:round(0.6 * n)
+#train <- shuffled_df[train_indices, ]
+#test_indices <- (round(0.6 * n) + 1):n
+#test <- shuffled_df[test_indices, ]
+set.seed(1995)
+train<-sample(1:nrow(pokemon),432)
+poke.test<-pokemon[-train,]
+poke.train<-pokemon[train,]
+
+```
 
 Let's try fitting a linear model with the response variable total and predictors HP, Attack, and Defense.
 
 ```{r}
-linmod <- lm(pokemon$Total~pokemon$HP+pokemon$Attack+pokemon$Defense)
+library(DAAG)
+linmod <- lm(poke.train$Total~poke.train$HP+poke.train$Attack+poke.train$Defense)
 summary(linmod)
 #plot(linmod)
-plot(pokemon$HP+pokemon$Attack+pokemon$Defense, pokemon$Total)
+plot(poke.train$HP+poke.train$Attack+poke.train$Defense, poke.train$Total)
 abline(linmod, h = 0.5, col = "red")
 #mmmm tasty sig values
-
+predicted<-predict(linmod, newdata=poke.test)
+mean(linmod$residuals^2)
+mean((poke.test$Total-predicted)^2)
 ```
 
 
@@ -94,21 +111,6 @@ pokeRF
 ```
 
 
-Before we get too far along, let's split up the data into training and testing sets
-```{r}
-#n <- nrow(pokemon)
-#shuffled_df <- pokemon[sample(n), ]
-#train_indices <- 1:round(0.6 * n)
-#train <- shuffled_df[train_indices, ]
-#test_indices <- (round(0.6 * n) + 1):n
-#test <- shuffled_df[test_indices, ]
-set.seed(1995)
-train<-sample(1:nrow(pokemon),432)
-poke.test<-pokemon[-train,]
-poke.train<-pokemon[train,]
-
-```
-
 
 Now, let's try to predict if a pokemon is legendary. I would assume that pokemon with a high total are legendary and after taking a peek at the data, it looks like most legendary pokemon do not have a gender. Let's see if this holds true in general.
 
@@ -139,23 +141,6 @@ plot2
 This plot shows that most legendary pokemon do not have a gender.
 
 Let see if there are any linear relations we can tease out. Name and number should have no effect on the data so I will exclude them from the start.
-
-```{r}
-# data<-poke.train[,3:23]
-# data[is.na(data)]<-0
-# data$hasGender<-factor(data$hasGender)
-# data$isLegendary<-factor(data$isLegendary)
-# data$Type_1<-factor(data$Type_1)
-# data$Type_2<-factor(data$Type_2)
-# data$Color<-factor(data$Color)
-# data$hasMegaEvolution<-factor(data$hasMegaEvolution)
-# data$Egg_Group_1<-factor(data$Egg_Group_1)
-# data$Egg_Group_2<-factor(data$Egg_Group_2)
-# data$Body_Style<-factor(data$Body_Style)
-# linmod2<-lm(Total~., data = data)
-# plot(linmod2)
-
-```
 
 Kmeans
 
