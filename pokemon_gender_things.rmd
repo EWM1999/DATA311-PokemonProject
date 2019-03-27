@@ -130,6 +130,9 @@ leglda
 
 I might just be high, but I'm pretty sure this indicates PC1 is a pretty good predictor for isLegendary. PC2 doesn't really seem to refer to anything here...
 
+
+##Gender PCA
+
 Ok, now let's run PCA on the subset that has a gender
 
 ```{r}
@@ -222,3 +225,12 @@ abline(linmod)
 ```
 
 Ok, now we're talking. So it looks like PC1 is correlated with the harder to catch Pokemon rather than the legendary ones. Probably a good time to start a new file, this is getting messy...
+
+```{r}
+set.seed(1995)
+train<-sample(1:nrow(poke),432)
+poke.test<-poke[-train,]
+poke.train<-poke[train,]
+```
+
+
