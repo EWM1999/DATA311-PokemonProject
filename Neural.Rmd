@@ -14,64 +14,18 @@ data = read.csv("pokemon_alopez247.csv", header=T)
 ```
 
 ```{r}
-summary(data)
-```
-
-
-#Neural Network, predicting isLegendary
-Neural net testing isLegendary w/ all
-```{r}
 library(nnet)
 library(NeuralNetTools)
-set.seed(53747958)
-numeric_col <- c(5:12, 16, 20:21)
-pokemon[,numeric_col] <- scale(pokemon[,numeric_col])
-colnames(data)[22]<-"isLegendary"
-nnpokemon<-nnet(isLegendary~., data = data, size = 1)
-plotnet(nnpokemon)
-mean(nnpokemon$residuals^2)
-```
-
-Neural net testing isLgendary w/ Defense+Pr_Male+Attack+HP
-```{r}
-library(nnet)
 library(neuralnet)
-library(NeuralNetTools)
 set.seed(53747958)
 numeric_col <- c(5:12, 16, 20:21)
-is.na(numeric_col) <- 0.5
 pokemon[,numeric_col] <- scale(pokemon[,numeric_col])
 trainset <- pokemon[1:505, ]
 testset <- pokemon[506:721, ]
 colnames(data)[22]<-"isLegendary"
-nnpokemon<-neuralnet(isLegendary~Defense+Pr_Male+Attack+HP,data=pokemon, hidden=3,act.fct = "logistic",
-                linear.output = FALSE)
-plotnet(nnpokemon)
-nnpokemon$result.matrix
-```
-*DOUBLE CHECK
-
-```{r}
-attach(pokemon)
-test=data.frame(Defense,Pr_Male,Attack,HP)
-Predict=compute(nnpokemon,test)
-Predict$net.result
-```
-
-```{r}
-attach(pokemon)
-prob <- Predict$net.result
-pred <- ifelse(prob>0.5, 1, 0)
-pred
-```
-
-```{r}
-#Test the resulting output
-temp_test <- subset(testset, select = c("Defense","Pr_Male", "Attack", "HP"))
-head(temp_test)
-nn.results <- compute(nnpokemon, temp_test)
-results <- data.frame(actual = testset$isLegendary, predicted = nn.results$net.result)
-results
+nn <- neuralnet(isLegendary ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainset, hidden=4, linear.output=TRUE, threshold=0.01)
+nn$result.matrix
+plotnet(nn)
 ```
 
 ```{r}
@@ -79,8 +33,23 @@ results <- data.frame(actual = testset$isLegendary, prediction = nn.results$net.
 results
 ```
 
-*DOUBLE CHECK
 ```{r}
-#mse <- sum((compute(nnpokemon, testset[,2:15])$net.result-test$Price)^2)
-#mse
+predval<- results[results$prediction.1>0.5,]
+predval1<-vector()
+for(i in predval[i,]) {
+  predval1[i]<-as.logical(FALSE)
+}
+predval1
+
 ```
+
+```{r}
+predicted=results$prediction * abs(diff(range(isLegendary))) + min(isLegendary)
+actual=results$actual * abs(diff(range(isLegendary))) + min(isLegendary)
+comparison=data.frame(predicted,actual)
+deviation=((actual-predicted)/actual)
+comparison=data.frame(predicted,actual,deviation)
+accuracy=1-abs(mean(deviation))
+accuracy
+```
+
