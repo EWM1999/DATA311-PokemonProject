@@ -1,0 +1,93 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#laurenedits
+
+```{r}
+data = read.csv("pokemon_alopez247.csv", header=T)
+```
+
+```{r}
+library(nnet)
+library(NeuralNetTools)
+library(neuralnet)
+set.seed(53747958)
+numeric_col <- c(5:12, 16, 20:21)
+pokemon[,numeric_col] <- scale(pokemon[,numeric_col])
+set.seed(1995)
+train<-sample(1:nrow(pokemon),505)
+testset<-poke[-train,]
+trainset<-poke[train,]
+```
+
+```{r}
+colnames(data)[22]<-"isLegendary"
+nn <- neuralnet(isLegendary ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainset, hidden=c(6,3), linear.output=TRUE, threshold=0.01)
+nn$result.matrix
+plotnet(nn)
+?neuralnet
+```
+
+```{r}
+#table(btest[,25], predict(nnbodtr, newdata=btest[,-25], type="class"))
+nn.results<-predict(nn,newdata=testset,type="class")
+# nn.results
+results <- data.frame(actual = testset$isLegendary, prediction = nn.results)
+results
+```
+
+```{r}
+for(i in 1:nrow(results)) {
+  results[i,4]<-as.integer(results[i,2])
+}
+results[,4]<-as.logical(results[,4])
+results
+```
+
+```{r}
+table(results$actual,results[,4])
+```
+
+```{r}
+# predicted=results$prediction * abs(diff(range(isLegendary))) + min(isLegendary)
+# actual=results$actual * abs(diff(range(isLegendary))) + min(isLegendary)
+# comparison=data.frame(predicted,actual)
+# deviation=((actual-predicted)/actual)
+# comparison=data.frame(predicted,actual,deviation)
+# accuracy=1-abs(mean(deviation))
+# accuracy
+```
+
+Ok, let's try using nnet since neuralnet doesn't do categorical response:
+
+```{r}
+library(gclus)
+library(nnet)
+library(NeuralNetTools)
+set.seed(1995)
+spoke <- cbind(scale(trainset[,6:11]), factor(trainset$isLegendary))
+colnames(spoke)[7] <- "isLegendary"
+spoke<-data.frame(spoke)
+nnpoke <- nnet(factor(isLegendary)~., data=spoke, size=4)
+table(trainset$isLegendary, predict(nnpoke, type="class"))
+
+
+plotnet(nnpoke)
+```
+
+
+```{r}
+spoketest <- cbind(scale(testset[,6:11]), factor(testset$isLegendary))
+colnames(spoketest)[7] <- "isLegendary"
+spoketest<-data.frame(spoketest)
+table(spoketest$isLegendary, predict(nnpoke, newdata=spoketest, type="class"))
+
+```
+
+Something something
