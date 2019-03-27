@@ -23,33 +23,26 @@ pokemon[,numeric_col] <- scale(pokemon[,numeric_col])
 trainset <- pokemon[1:505, ]
 testset <- pokemon[506:721, ]
 colnames(data)[22]<-"isLegendary"
-nn <- neuralnet(isLegendary ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainset, hidden=4, linear.output=TRUE, threshold=0.01)
+nn <- neuralnet(isLegendary ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainset, hidden=3, linear.output=TRUE, threshold=0.008)
 nn$result.matrix
 plotnet(nn)
 ```
 
 ```{r}
-results <- data.frame(actual = testset$isLegendary, prediction = nn.results$net.result)
+nn.result <- predict(nn,newdata=testset, type="class")
+results <- data.frame(actual = testset$isLegendary, prediction = nn.result)
 results
 ```
 
 ```{r}
-predval<- results[results$prediction.1>0.5,]
-predval1<-vector()
-for(i in predval[i,]) {
-  predval1[i]<-as.logical(FALSE)
+for(i in 1:nrow(results)){
+  results[i,4]<-as.integer(results[i,2])
 }
-predval1
-
+results[,4]<-as.logical(results[,4])
+results
 ```
 
 ```{r}
-predicted=results$prediction * abs(diff(range(isLegendary))) + min(isLegendary)
-actual=results$actual * abs(diff(range(isLegendary))) + min(isLegendary)
-comparison=data.frame(predicted,actual)
-deviation=((actual-predicted)/actual)
-comparison=data.frame(predicted,actual,deviation)
-accuracy=1-abs(mean(deviation))
-accuracy
+table(results$actual, results[,4])
 ```
 
