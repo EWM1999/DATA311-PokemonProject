@@ -3,7 +3,6 @@ title: "R Notebook"
 output: html_notebook
 ---
 ```{r setup, include=FALSE}
-
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
@@ -17,31 +16,48 @@ data = read.csv("pokemon_alopez247.csv", header=T)
 summary(data)
 ```
 
+#Basic 3d Scatterplots 
+##Evaluating variables, Total, Defense, and Pr_Male
 ```{r}
 library(scatterplot3d) 
 attach(pokemon) 
-sp <- scatterplot3d(HP,Defense,Pr_Male, pch=16, highlight.3d=TRUE,
+sp <- scatterplot3d(Total,Defense,Pr_Male, pch=16, highlight.3d=TRUE,
   type="h", main="3D Scatterplot")
 ```
 
+3d Scatterplot without line markers
 ```{r}
 library(scatterplot3d)
 attach(pokemon)
-scatterplot3d(Defense,HP,Pr_Male, main="3D Scatterplot")
+scatterplot3d(Total,Defense,Pr_Male, main="3D Scatterplot")
 ```
+
+#Corelation
+```{r}
+library(gclus)
+cleanPoke <- na.omit(pokemon)
+dta <- cleanPoke[c(5:8, 16)] # data, numbers as column numbers 
+dta.r <- abs(cor(dta)) # correlation
+#dta.r[is.na(dta.r)] <- 0.5
+dta.col <- dmat.color(dta.r) # colors
+dta.o <- order.single(dta.r) 
+cpairs(dta, dta.o, panel.colors=dta.col, gap=.5,
+main="Variables Ordered and Colored by Correlation" )
+```
+It may be worth exploring how the correlation changes depending on what value is set to Pr_Male NA values when using "ta.r[is.na(dta.r)] <- 0.5." Below is the correlation jsy between the columns 5:8 for additional clarity. 
 
 ```{r}
 library(gclus)
+#cleanPoke <- na.omit(pokemon)
 dta <- pokemon[c(5:8)] # data, numbers as column numbers 
-#dta <- pokemon[c(5:8, 16)]
 dta.r <- abs(cor(dta)) # correlation
 dta.col <- dmat.color(dta.r) # colors
-#dta.r[is.na(dta.r)] <- 0.5
 dta.o <- order.single(dta.r) 
-cpairs(dta, dta.o, panel.csolors=dta.col, gap=.5,
+cpairs(dta, dta.o, panel.colors=dta.col, gap=.5,
 main="Variables Ordered and Colored by Correlation" )
 ```
 
+#Neural Network, predicting isLegendary
 Neural net testing isLegendary w/ all
 ```{r}
 library(nnet)
@@ -62,23 +78,27 @@ library(neuralnet)
 library(NeuralNetTools)
 set.seed(53747958)
 numeric_col <- c(5:12, 16, 20:21)
+is.na(numeric_col) <- 0.5
 pokemon[,numeric_col] <- scale(pokemon[,numeric_col])
 trainset <- pokemon[1:505, ]
 testset <- pokemon[506:721, ]
-colnames(data)[22]<-"Pr_Male"
-nnpokemon<-neuralnet(isLegendary~Defense+Pr_Male+Attack+HP,data=pokemon, hidden=2,act.fct = "logistic",
+colnames(data)[22]<-"isLegendary"
+nnpokemon<-neuralnet(isLegendary~Defense+Pr_Male+Attack+HP,data=pokemon, hidden=3,act.fct = "logistic",
                 linear.output = FALSE)
 plotnet(nnpokemon)
+nnpokemon$result.matrix
 ```
-
+*DOUBLE CHECK
 
 ```{r}
+attach(pokemon)
 test=data.frame(Defense,Pr_Male,Attack,HP)
 Predict=compute(nnpokemon,test)
 Predict$net.result
 ```
 
 ```{r}
+attach(pokemon)
 prob <- Predict$net.result
 pred <- ifelse(prob>0.5, 1, 0)
 pred
@@ -89,10 +109,23 @@ pred
 temp_test <- subset(testset, select = c("Defense","Pr_Male", "Attack", "HP"))
 head(temp_test)
 nn.results <- compute(nnpokemon, temp_test)
+results <- data.frame(actual = testset$isLegendary, predicted = nn.results$net.result)
+results
+```
+
+```{r}
 results <- data.frame(actual = testset$isLegendary, prediction = nn.results$net.result)
+results
+```
+
+*DOUBLE CHECK
+```{r}
+#mse <- sum((compute(nnpokemon, testset[,2:15])$net.result-test$Price)^2)
+#mse
 ```
 
 
+#Principle Component Analysis
 ```{r}
 pokemon <- read.csv("~/pokemon_alopez247.csv", stringsAsFactors = FALSE)
 #remove NA from dataset
@@ -115,11 +148,13 @@ text(pcPoke$x[,1], pcPoke$x[,2], labels = 1:nrow(pokemon))
 ```
 
 ```{r}
-round(pcPoke$rotation[,1:2], 2)
+round(pcPoke$rotation[,1:5], 3)
 ```
 
 ```{r}
 pokemon[order(pcPoke$x[,1], decreasing=TRUE)[1:4], 1:3]
+plot(pcPoke, type="lines")
+abline(a=1, b=0, col="blue", lwd=3)
 ```
 
 ```{r}
