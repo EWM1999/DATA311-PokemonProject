@@ -27,7 +27,8 @@ trainset<-poke[train,]
 ```
 
 ```{r}
-colnames(data)[22]<-"isLegendary"
+set.seed(2019)
+# colnames(data)[22]<-"isLegendary"
 nn <- neuralnet(isLegendary ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainset, hidden=c(6,3), linear.output=TRUE, threshold=0.01)
 nn$result.matrix
 plotnet(nn)
@@ -81,13 +82,99 @@ table(trainset$isLegendary, predict(nnpoke, type="class"))
 plotnet(nnpoke)
 ```
 
+```{r}
+spoke
+```
+
 
 ```{r}
 spoketest <- cbind(scale(testset[,6:11]), factor(testset$isLegendary))
 colnames(spoketest)[7] <- "isLegendary"
 spoketest<-data.frame(spoketest)
 table(spoketest$isLegendary, predict(nnpoke, newdata=spoketest, type="class"))
+```
+
+That's pretty damn good for misclass!
+
+
+##Regression neural net for catch rate
+
+```{r}
+set.seed(1995)
+train<-sample(1:nrow(pokemon),505)
+testset<-poke[-train,]
+trainset<-poke[train,]
+```
+
+```{r}
+# trainset[,22]<-scale(trainset[,22])
+head(trainset)
+# trainset
+```
+
+```{r}
+set.seed(220734532)
+nncatch <- neuralnet(Catch_Rate ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainset, hidden=c(5,4,3,2), threshold=0.01)
+nn$result.matrix
+plotnet(nncatch)
+```
+
+Calculate some errors!!
+
+```{r}
+sum((predict(nncatch, data.frame(testset))-testset$Catch_Rate)^2)#/length(trainset)
+mse<-sum((compute(nncatch, testset[,6:11])$net.result-testset$Catch_Rate)^2)
+mse
+```
+
+
+
+```{r}
+linmod<-lm(Catch_Rate~Attack+Defense+HP+Sp_Atk+Sp_Def+Speed,data=trainset)
+sum((predict(linmod,data.frame(testset))-testset$Catch_Rate)^2)
 
 ```
 
-Something something
+
+```{r}
+trainsetg<-trainset[which(hasGender=='True'),]
+testsetg<-testset[which(hasGender=='True'),]
+trainsetg<-na.omit(trainsetg)
+trainsetg
+testsetg<-na.omit(testsetg)
+testsetg
+```
+
+```{r}
+set.seed(9065342)
+nnmale <- neuralnet(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=c(4,3), threshold=0.01)
+plotnet(nnmale)
+```
+
+```{r}
+mse<-sum((compute(nnmale, testsetg[,6:11])$net.result-testsetg$Pr_Male)^2)
+mse
+```
+
+```{r}
+for(i in 1:5){
+  nnmaletr <- neuralnet(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=c(3,i), threshold=0.01)
+  print(paste("Number of hidden layer variables in second layer:", i))
+  print(paste("MSE: ",sum((compute(nnmaletr, testsetg[,6:11])$net.result-testsetg$Pr_Male)^2)))
+}
+```
+
+```{r}
+set.seed(906534)
+nnmale <- neuralnet(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=c(3,1), threshold=0.01)
+plotnet(nnmale)
+mse<-sum((compute(nnmale, testsetg[,6:11])$net.result-testsetg$Pr_Male)^2)
+mse
+```
+
+
+```{r}
+linmod<-lm(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg)
+sum((predict(linmod,newdata=testsetg)-testsetg$Pr_Male)^2)
+```
+
