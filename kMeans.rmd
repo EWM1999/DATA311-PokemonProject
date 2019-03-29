@@ -1,0 +1,67 @@
+---
+title: "Kmeans"
+author: "Barret Jackson"
+date: "March 29, 2019"
+output: pdf_document
+---
+
+Kmeans
+
+
+```{r}
+library(mclust)
+library(cluster)
+library(dplyr)
+library(fpc)
+pokeNum<-select_if(pokemon, is.numeric)
+distPoke<-daisy(pokemon)
+#distPoke<-daisy(pokeNum)
+summary(distPoke)
+pokeDist<-cmdscale(distPoke)
+plot(pokeDist, type = "n")
+text(pokeDist, rownames(pokeDist))
+set.seed(413)
+#kAnimals<-kmeans(dAnimals, 3)
+#plot(dAnimals, col = kAnimals$cluster)
+#points(kAnimals$centers, col = 1:3, pch=8, cex=2)
+
+clustore<-matrix(0, nrow = 721, ncol=25)
+wsstore<-NULL
+for(i in 1:10){
+  km<-kmeans(pokeDist, i, nstart=10)
+  clustore[,i]<-km$cluster
+  wsstore[i]<-km$tot.withinss
+}
+plot(wsstore)
+
+kPoke2<-kmeans(pokeDist, 7, nstart=25)
+plot(pokeDist, col = kPoke2$cluster)
+points(kPoke2$centers, col = 1:4, pch=8, cex=2)
+#kAnimals$cluster
+#table(rownames(pokemon), kPoke2$cluster)
+out <- cbind(pokemon, clusterNum = kPoke2$cluster)
+clusterGroups<-order(out$clusterNum, decreasing = TRUE)
+out[clusterGroups,]
+
+```
+
+Ok, let's check out the mean for Total for each cluster
+
+```{r}
+for(i in 1:7) {
+  print(paste("Mean for total for cluster ",i))
+  print(mean(out[which(out$clusterNum==i),]$Total))
+}
+```
+
+Ok, how about the number of isLegendary in each cluster
+
+```{r}
+for(i in 1:7) {
+  print(paste("Number of isLegendary for cluster ",i))
+  legendTemp<-out[which(out$clusterNum==i),]
+  print(count(legendTemp,vars=isLegendary))
+}
+```
+
+Ok, that didnt' look great, but it looks like isLegendary==TRUE are mostly in clusters 2 and 4.
