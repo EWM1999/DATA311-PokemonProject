@@ -31,3 +31,7 @@ abline(linmod, h = 0.5, col = "blue")
 #mmmm tasty sig values
 ```
 
+```{r}
+
+```
+
