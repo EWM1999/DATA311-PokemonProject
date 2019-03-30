@@ -63,12 +63,28 @@ mean((poke.test$Total-predicted)^2)
 First attempt at Clustering
 ```{r}
 eucdist<-dist(pokemon, method="euclidean")
+mandist<-dist(pokemon, method = "manhattan")
 clusPokemon<-hclust(eucdist, method = "single")
+clusPokemon2<-hclust(mandist, method = "single")
 plot(clusPokemon)
+plot(clusPokemon2)
 clusPokemonAvg<-hclust(eucdist, method = "average")
+clusPokemonAvg2<-hclust(mandist, method = "average")
 plot(clusPokemonAvg)
+plot(clusPokemonAvg2)
 clusComplete<-hclust(eucdist, method = "complete")
+clusComplete2<-hclust(mandist, method = "complete")
 plot(clusComplete)
+plot(clusComplete2)
+
+mancom <- cutree(clusComplete2, 2)
+euccom<-cutree(clusComplete, 2)
+manavg <- cutree(clusPokemonAvg2, 2)
+eucavg<-cutree(clusPokemonAvg, 2)
+table(mancom, euccom)
+table(manavg, eucavg)
+table(manavg, mancom)
+table(euccom, eucavg)
 ```
 
 @Barrett
