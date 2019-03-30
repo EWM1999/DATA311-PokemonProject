@@ -10,7 +10,17 @@ knitr::opts_chunk$set(echo = TRUE)
 #laurenedits
 
 ```{r}
-data = read.csv("pokemon_alopez247.csv", header=T)
+pokemon = read.csv("pokemon_alopez247.csv", header=T)
+```
+
+```{r}
+pokemon<-read.csv("pokemon_alopez247.csv")
+library(tree)
+poke<-data.frame(pokemon)
+attach(poke)
+pocl<-tree(Total~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke)
+plot(pocl)
+text(pocl)
 ```
 
 ```{r}

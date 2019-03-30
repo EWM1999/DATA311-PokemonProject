@@ -96,3 +96,44 @@ for(i in 1:6) {
 }
 ```
 
+Alright, we're gonna create a data frame with the means for each numeric value by cluster now
+
+Ok fuck that, we'll create arrays for each variable and column bind them (stupid data frames...)
+
+```{r}
+tote <- rep(NA, 6)
+hp <- rep(NA, 6)
+att <- rep(NA, 6)
+def <- rep(NA, 6)
+spa <- rep(NA, 6)
+spd <- rep(NA, 6)
+spe <- rep(NA, 6)
+hei <- rep(NA, 6)
+wei <- rep(NA, 6)
+cat <- rep(NA, 6)
+leg <- c(0,0,0,0,0,46)
+nlg <- c(157,169,127,103,112,7)
+for(i in 1:6) {
+  tote[i]<-mean(out[which(out$clusterNum==i),]$Total)
+  hp[i]<-mean(out[which(out$clusterNum==i),]$HP)
+  att[i]<-mean(out[which(out$clusterNum==i),]$Attack)
+  def[i]<-mean(out[which(out$clusterNum==i),]$Defense)
+  spa[i]<-mean(out[which(out$clusterNum==i),]$Sp_Atk)
+  spd[i]<-mean(out[which(out$clusterNum==i),]$Sp_Def)
+  spe[i]<-mean(out[which(out$clusterNum==i),]$Speed)
+  hei[i]<-mean(out[which(out$clusterNum==i),]$Height_m)
+  wei[i]<-mean(out[which(out$clusterNum==i),]$Weight_kg)
+  cat[i]<-mean(out[which(out$clusterNum==i),]$Catch_Rate)
+  # leg[i]<-mean(out[which(out$clusterNum==i),]$Total)
+  # nlg[i]<-mean(out[which(out$clusterNum==i),]$Total)
+}
+pTab<-cbind(tote,hp,att,def,spa,spd,spe,hei,wei,cat,leg,nlg)
+```
+
+```{r}
+col<-c("Total","HP","Attack","Defense","Sp_Atk","Sp_Def","Speed","Height_m","Weight_kg","Catch_Rate","Legend","!Legend")
+row<-c("Clus1","Clus2","Clus3","Clus4","Clus5","Clus6")
+colnames(pTab)<-col
+rownames(pTab)<-row
+pTab
+```
