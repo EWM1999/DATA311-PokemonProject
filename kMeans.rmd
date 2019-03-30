@@ -13,6 +13,7 @@ library(mclust)
 library(cluster)
 library(dplyr)
 library(fpc)
+pokemon<-read.csv("pokemon_alopez247.csv")
 pokeNum<-select_if(pokemon, is.numeric)
 distPoke<-daisy(pokemon)
 #distPoke<-daisy(pokeNum)
@@ -65,3 +66,33 @@ for(i in 1:7) {
 ```
 
 Ok, that didnt' look great, but it looks like isLegendary==TRUE are mostly in clusters 2 and 4.
+
+Now I'll try to reduce the amount of clusters so that all of (or most of) the legendary Pokemon end up in one cluster
+
+```{r}
+pokeNum<-select_if(pokemon, is.numeric)
+distPoke<-daisy(pokemon)
+#distPoke<-daisy(pokeNum)
+summary(distPoke)
+pokeDist<-cmdscale(distPoke)
+plot(pokeDist, type = "n")
+text(pokeDist, rownames(pokeDist))
+set.seed(413)
+
+kPoke2<-kmeans(pokeDist, 6, nstart=25)
+plot(pokeDist, col = kPoke2$cluster)
+points(kPoke2$centers, col = 1:4, pch=8, cex=2)
+#kAnimals$cluster
+#table(rownames(pokemon), kPoke2$cluster)
+out <- cbind(pokemon, clusterNum = kPoke2$cluster)
+clusterGroups<-order(out$clusterNum, decreasing = TRUE)
+out[clusterGroups,]
+```
+
+```{r}
+for(i in 1:6) {
+  legendTemp<-out[which(out$clusterNum==i),]
+  print(count(legendTemp,vars=isLegendary))
+}
+```
+
