@@ -1,5 +1,5 @@
 ---
-title: "R Notebook"
+title: "Neural networks, Pokemon"
 output: html_notebook
 ---
 
@@ -11,8 +11,20 @@ knitr::opts_chunk$set(echo = TRUE)
 data = read.csv("pokemon_alopez247.csv", header=T)
 ```
 
-
 #Neural Networks
+```{r}
+library(nnet)
+library(NeuralNetTools)
+library(neuralnet)
+set.seed(53747958)
+numeric_col <- c(5:12, 16, 20:21)
+pokemon[,numeric_col] <- scale(pokemon[,numeric_col])
+set.seed(1995)
+train<-sample(1:nrow(pokemon),505)
+testset<-poke[-train,]
+trainset<-poke[train,]
+```
+
 ```{r}
 library(gclus)
 library(nnet)
@@ -50,6 +62,7 @@ testsetg
 #Neural Net predicting Pr_Male
 ```{r}
 set.seed(906534)
+library(neuralnet)
 nnmale <- neuralnet(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=3, threshold=0.01)
 plotnet(nnmale)
 mse<-mean((compute(nnmale, testsetg[,6:11])$net.result-testsetg$Pr_Male)^2)
@@ -73,7 +86,6 @@ for(i in 1:5){
   print(paste("MSE: ", mean((compute(nnmaletr, testsetg[,6:11])$net.result-testsetg$Pr_Male)^2)))
 }
 ```
-
 MSE with 2 hidden layers and 4 and 3 nodes: 0.04011755
 MSE with 1 hidden layer and 3 nodes: 0.03988659
 
@@ -83,22 +95,22 @@ mean((predict(linmod,newdata=testsetg)-testsetg$Pr_Male)^2)
 ```
 This is pretty close to our neural net modeled above when we use 1 hidden layer and 3 nodes. 
 
+
 #Neural Net, predicting Generation
 ```{r}
-set.seed(12345)
+set.seed(23453)
 library(neuralnet)
-nnGen <- neuralnet(Generation ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=5, threshold=0.01)
+trainsetg<-trainset[which(hasGender=='True'),]
+testsetg<-testset[which(hasGender=='True'),]
+trainsetg<-na.omit(trainsetg)
+testsetg<-na.omit(testsetg)
+nnGen <- neuralnet(Generation ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed + Pr_Male,data=trainsetg, hidden=4, threshold=0.01)
 plotnet(nnGen)
-```
-
-```{r}
-mse<-mean((compute(nnGen, testsetg[,6:11])$net.result-testsetg$Generation)^2)
+mse<-mean((compute(nnGen, testsetg[,c(6:11, 16)])$net.result-testsetg$Generation)^2)
 mse
 ```
-MSE without Pr_Male included, 5 nodes 1 hidden
-1.349612
-MSE with Pr_Male included, 5 nodes 1 hidden
-1.466631
+
+@Barret, I cannot seem to get a misclassification table working for Generation, let me know if you can for whatever reason
 
 ```{r}
 linmod<-lm(Generation ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg)
