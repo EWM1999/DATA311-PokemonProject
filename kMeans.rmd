@@ -107,6 +107,7 @@ spe <- rep(NA, 6)
 hei <- rep(NA, 6)
 wei <- rep(NA, 6)
 cat <- rep(NA, 6)
+prm <- rep(NA, 6)
 leg <- c(0,0,0,0,0,46)
 nlg <- c(157,169,127,103,112,7)
 for(i in 1:6) {
@@ -120,16 +121,32 @@ for(i in 1:6) {
   hei[i]<-mean(out[which(out$clusterNum==i),]$Height_m)
   wei[i]<-mean(out[which(out$clusterNum==i),]$Weight_kg)
   cat[i]<-mean(out[which(out$clusterNum==i),]$Catch_Rate)
+  prm[i]<-mean(na.omit(out[which(out$clusterNum==i),]$Pr_Male))
   # leg[i]<-mean(out[which(out$clusterNum==i),]$Total)
   # nlg[i]<-mean(out[which(out$clusterNum==i),]$Total)
 }
-pTab<-cbind(tote,hp,att,def,spa,spd,spe,hei,wei,cat,leg,nlg)
+pTab<-cbind(tote,hp,att,def,spa,spd,spe,hei,wei,cat,prm,leg,nlg)
 ```
 
 ```{r}
-col<-c("Total","HP","Attack","Defense","Sp_Atk","Sp_Def","Speed","Height_m","Weight_kg","Catch_Rate","Legend","!Legend")
+out[which(out$hasGender=="True"),]
+na.omit(out)
+```
+
+```{r}
+col<-c("Total","HP","Attack","Defense","Sp_Atk","Sp_Def","Speed","Height_m","Weight_kg","Catch_Rate","Pr_Male","Legend","!Legend")
 row<-c("Clus1","Clus2","Clus3","Clus4","Clus5","Clus6")
 colnames(pTab)<-col
 rownames(pTab)<-row
+pTab<-round(pTab,2)
 pTab
+```
+
+
+```{r}
+pokemon<-data.frame(pokemon)
+linmod<-lm(Catch_Rate~Pr_Male,data=pokemon)
+summary(linmod)
+plot(pokemon$Pr_Male,pokemon$Catch_Rate)
+abline(linmod)
 ```
