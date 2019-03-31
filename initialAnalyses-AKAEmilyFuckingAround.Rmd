@@ -56,7 +56,7 @@ abline(linmod, h = 0.5, col = "red")
 #mmmm tasty sig values
 predicted<-predict(linmod, newdata=poke.test)
 mean(linmod$residuals^2)
-mean((poke.test$Total-predicted)^2)
+mean((poke.test[,5]-predicted)^2)
 ```
 
 
@@ -265,7 +265,7 @@ TheLegends<-as.data.frame(table(pokeLegend$Generation))
 colnames(TheLegends)<-c("Generation", "Legends")
 TheLegends
 summary(TheLegends)
-plot<-ggplot(TheLegends, aes(Generation, Legends))+geom_bar(stat="identity")
+plot<-ggplot(TheLegends, aes(Generation, Legends))+geom_bar(stat="identity", fill = wes_palette("Moonrise3", 6, type = "continuous")) 
 plot
 #color=scale_fill_manual(values=wes_palette("FantasticFox1"))
 TheMan<-as.data.frame(table(pokeLegend$Type_1))
@@ -300,14 +300,40 @@ Let's see if there is a relationship between score and gender
 
 ```{r}
 set.seed(983457)
-pokeG<-tree(Pr_Male~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed + Total,data=poke1)
+pokeG<-tree(Pr_Male~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke1)
 plot(pokeG)
 text(pokeG, pretty=0)
 cv.pokeG<-cv.tree(pokeG, FUN=prune.tree)
 plot(cv.pokeG)
-prunePokeG<-prune.tree(pokeG, best=12)
+cv.bocl<-cv.tree(pokeG)
+plot(cv.bocl, type="b")
+prunePokeG<-prune.tree(pokeG, best=3)
 plot(prunePokeG)
 text(prunePokeG, pretty=0)
+summary(prunePokeG)
 ```
 
+
+```{r}
+head(poke1)
+countM<-0
+countF<-0
+fifty<-0
+for(i in 1:nrow(poke1)){
+  if(poke1[i,16]>0.5){
+    countM<-countM + 1
+  }
+  if(poke1[i,16]==0.5){
+    fifty<-fifty + 1
+  }
+  if(poke1[i,16]<0.5){
+    countF<-countF+1
+  }
+}
+vect<-cbind(countM, fifty, countF)
+vect
+library(wesanderson)
+sp<-ggplot(poke1, aes(poke1$Pr_Male, fill = poke1$Pr_Male)) + geom_histogram(stat="count", color = "black", fill = wes_palette("FantasticFox1", 7, type = "continuous")) 
+sp
+```
 
