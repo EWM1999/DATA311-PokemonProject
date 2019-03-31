@@ -1,0 +1,80 @@
+---
+title: "Trees"
+author: "Barret Jackson"
+date: "March 31, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+pokemon<-read.csv("pokemon_alopez247.csv")
+library(tree)
+poke<-data.frame(pokemon)
+poke<-poke[which(hasGender=='True'),]
+attach(poke)
+pocl<-tree(Pr_Male~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed+Weight_kg+Height_m,data=poke)
+plot(pocl)
+text(pocl)
+summary(pocl)
+```
+
+
+```{r}
+set.seed(1995)
+cv.pocl<-cv.tree(pocl, FUN=prune.tree)
+which.min(cv.pocl$dev)
+plot(cv.pocl,type="b")
+```
+
+
+```{r}
+seedpoke<-sample(1:5000,100)
+devpoke<-sample(NA,100,replace=TRUE)
+for(i in 1:100) {
+  set.seed(seedpoke[i])
+  cv.pocl<-cv.tree(pocl, FUN=prune.tree)
+  devpoke[i]<-which.min(cv.pocl$dev)
+}
+table(devpoke)
+p.pocl<-prune.tree(pocl,best=6)
+plot(p.pocl)
+text(p.pocl)
+summary(p.pocl)
+```
+
+```{r}
+# length(predict(pocl,poke))
+# length(poke$Pr_Male)
+mse1<-mean((predict(pocl,poke)-poke$Pr_Male)^2)
+mse2<-mean((predict(p.pocl,poke)-poke$Pr_Male)^2)
+mse1
+mse2
+sqrt(mse1)
+sqrt(mse2)
+```
+
+```{r}
+library(randomForest)
+set.seed(1995)
+pokebag<-randomForest(Pr_Male~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed+Height_m+Weight_kg,data=poke,mtry=8,importance=TRUE)
+pokebag
+varImpPlot(pokebag)
+```
+Random forest where m=1
+```{r}
+pokeRF<-randomForest(Pr_Male~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed+Height_m+Weight_kg,data=poke,mtry=1,importance=TRUE)
+pokeRF
+varImpPlot(pokeRF)
+```
+
+
+
+```{r}
+set.seed(1995)
+train<-sample(1:nrow(poke),432)
+poke.test<-poke[-train,]
+poke.train<-poke[train,]
+```

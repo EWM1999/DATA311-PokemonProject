@@ -26,6 +26,8 @@ attach(poke)
 poke1<-poke[which(hasGender=='True'),]
 head(poke1)
 length(poke1[,1])
+poke9<-poke1[,c(6:11,20:21)]
+head(poke9)
 ```
 
 ##Trees on the new data set

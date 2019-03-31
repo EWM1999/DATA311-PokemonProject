@@ -1,0 +1,33 @@
+---
+title: "PCAPoke"
+author: "Barret Jackson"
+date: "March 31, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+pokemon<-read.csv("pokemon_alopez247.csv")
+poke<-data.frame(pokemon)
+```
+
+
+```{r}
+attach(poke)
+poke1<-poke[which(hasGender=='True'),]
+poke1<-poke1[,c(6:11,20:21)]
+```
+
+```{r}
+pcapoke <- prcomp(as.matrix(poke1), scale=TRUE)
+summary(pcapoke)
+biplot(pcapoke)
+```
+
+
+```{r}
+round(pcapoke$rotation[,1:2], 2)
+```

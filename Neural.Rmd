@@ -178,13 +178,14 @@ for(i in 1:5){
 set.seed(906534)
 nnmale <- neuralnet(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=c(3,1), threshold=0.01)
 plotnet(nnmale)
-mse<-sum((compute(nnmale, testsetg[,6:11])$net.result-testsetg$Pr_Male)^2)
+mse<-mean((compute(nnmale, testsetg[,6:11])$net.result-testsetg$Pr_Male)^2)
 mse
 ```
 
 
 ```{r}
 linmod<-lm(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg)
-sum((predict(linmod,newdata=testsetg)-testsetg$Pr_Male)^2)
+mean((predict(linmod,newdata=testsetg)-testsetg$Pr_Male)^2)
+summary(linmod)
 ```
 
