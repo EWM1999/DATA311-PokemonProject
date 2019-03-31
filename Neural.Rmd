@@ -19,7 +19,6 @@ library(neuralnet)
 set.seed(53747958)
 numeric_col <- c(5:12, 16, 20:21)
 pokemon[,numeric_col] <- scale(pokemon[,numeric_col])
-set.seed(1995)
 train<-sample(1:nrow(pokemon),505)
 testset<-poke[-train,]
 trainset<-poke[train,]
@@ -62,6 +61,8 @@ testsetg
 #Neural Net predicting Pr_Male
 ```{r}
 set.seed(906534)
+library(nnet)
+library(NeuralNetTools)
 library(neuralnet)
 nnmale <- neuralnet(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=3, threshold=0.01)
 plotnet(nnmale)
@@ -95,22 +96,42 @@ mean((predict(linmod,newdata=testsetg)-testsetg$Pr_Male)^2)
 ```
 This is pretty close to our neural net modeled above when we use 1 hidden layer and 3 nodes. 
 
-
-#Neural Net, predicting Generation
+#Neural net predicting hasGender
 ```{r}
-set.seed(23453)
+library(gclus)
+library(nnet)
+library(NeuralNetTools)
+set.seed(1995)
+gpoke <- cbind(scale(trainset[,c(6:11, 20:22)]), factor(trainset$hasGender))
+colnames(gpoke)[10] <- "hasGender"
+gpoke<-data.frame(gpoke)
+nngend <- nnet(factor(hasGender)~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed + Catch_Rate + Height_m + Weight_kg, data=gpoke, size=11)
+plotnet(nngend)
+table(trainset$hasGender, predict(nngend, type="class"))
+```
+
+#Neural net predicting Generation
+```{r}
+library(gclus)
+library(nnet)
 library(neuralnet)
-trainsetg<-trainset[which(hasGender=='True'),]
-testsetg<-testset[which(hasGender=='True'),]
-trainsetg<-na.omit(trainsetg)
-testsetg<-na.omit(testsetg)
-nnGen <- neuralnet(Generation ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed + Pr_Male,data=trainsetg, hidden=4, threshold=0.01)
-plotnet(nnGen)
-mse<-mean((compute(nnGen, testsetg[,c(6:11, 16)])$net.result-testsetg$Generation)^2)
+library(NeuralNetTools)
+set.seed(19127395)
+#nnGeneration <- neuralnet(Generation ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed + Pr_Male,data=trainsetg, hidden=5, threshold=0.01)
+nnGeneration <- neuralnet(Generation ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=5, threshold=0.01)
+plotnet(nnGeneration)
+mse<-mean((compute(nnGeneration, testset[,6:11])$net.result-testset$Generation)^2)
 mse
 ```
 
-@Barret, I cannot seem to get a misclassification table working for Generation, let me know if you can for whatever reason
+Optimizing number of nodes in first layer
+```{r}
+for(i in 1:5){
+  nnmaletr <- neuralnet(Generation ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=3, threshold=0.01)
+  print(paste("Number of hidden layer variables in first layer:", i))
+  print(paste("MSE: ", mean((compute(nnmaletr, testsetg[,6:11])$net.result-testsetg$Pr_Male)^2)))
+}
+```
 
 ```{r}
 linmod<-lm(Generation ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg)
