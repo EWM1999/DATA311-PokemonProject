@@ -105,10 +105,18 @@ set.seed(1995)
 gpoke <- cbind(scale(trainset[,c(6:11, 20:22)]), factor(trainset$hasGender))
 colnames(gpoke)[10] <- "hasGender"
 gpoke<-data.frame(gpoke)
-nngend <- nnet(factor(hasGender)~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed + Catch_Rate + Height_m + Weight_kg, data=gpoke, size=11)
+nngend <- nnet(factor(hasGender)~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed + Catch_Rate + Height_m + Weight_kg, data=gpoke, size=7)
 plotnet(nngend)
 table(trainset$hasGender, predict(nngend, type="class"))
 ```
+It appears that our neural net is efefctive in predicting hasGender. 
+1 hidden layer with 11 nodes appears to overfit the model, 
+         1   2
+  False  45   0
+  True    0 460
+  
+Instead 1 hidden layer with 7 nodes appears to have a reasonable misclassification without totally overfitting. 
+
 
 #Neural net predicting Generation
 ```{r}
