@@ -119,11 +119,15 @@ library(randomForest)
 set.seed(1995)
 pokebag<-randomForest(Total~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke,mtry=6,importance=FALSE)
 pokebag
+pokebag2<-randomForest(isLegendary~ Total+hasGender,data=poke.train,mtry=6,importance=FALSE)
+pokebag2
 ```
 Random forest where m=3
 ```{r}
 pokeRF<-randomForest(Total~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke,mtry=3,importance=TRUE)
 pokeRF
+pokeRF2<-randomForest(isLegendary~Total+hasGender,data=poke.train,mtry=3,importance=TRUE)
+pokeRF2
 ```
 
 
