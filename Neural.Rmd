@@ -1,0 +1,155 @@
+---
+title: "Neural networks, Pokemon"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+data = read.csv("pokemon_alopez247.csv", header=T)
+```
+
+#Neural Networks
+```{r}
+library(nnet)
+library(NeuralNetTools)
+library(neuralnet)
+set.seed(53747958)
+numeric_col <- c(5:12, 16, 20:21)
+pokemon[,numeric_col] <- scale(pokemon[,numeric_col])
+train<-sample(1:nrow(pokemon),505)
+testset<-poke[-train,]
+trainset<-poke[train,]
+```
+
+```{r}
+library(gclus)
+library(nnet)
+library(NeuralNetTools)
+set.seed(1995)
+spoke <- cbind(scale(trainset[,6:11]), factor(trainset$isLegendary))
+colnames(spoke)[7] <- "isLegendary"
+spoke<-data.frame(spoke)
+nnpoke <- nnet(factor(isLegendary)~., data=spoke, size=9)
+table(trainset$isLegendary, predict(nnpoke, type="class"))
+plotnet(nnpoke)
+```
+
+```{r}
+spoke
+```
+
+```{r}
+spoketest <- cbind(scale(testset[,6:11]), factor(testset$isLegendary))
+colnames(spoketest)[7] <- "isLegendary"
+spoketest<-data.frame(spoketest)
+table(spoketest$isLegendary, predict(nnpoke, newdata=spoketest, type="class"))
+```
+
+```{r}
+attach(data)
+trainsetg<-trainset[which(hasGender=='True'),]
+testsetg<-testset[which(hasGender=='True'),]
+trainsetg<-na.omit(trainsetg)
+trainsetg
+testsetg<-na.omit(testsetg)
+testsetg
+```
+
+##Neural Net predicting Pr_Male
+```{r}
+set.seed(906534)
+library(nnet)
+library(NeuralNetTools)
+library(neuralnet)
+nnmale <- neuralnet(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=3, threshold=0.01)
+#nnmale <- neuralnet(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed + Weight_kg + Height_m,data=trainsetg, hidden=5, threshold=0.01)
+plotnet(nnmale)
+mse<-mean((compute(nnmale, testsetg[,6:11])$net.result-testsetg$Pr_Male)^2)
+#mse<-mean((compute(nnmale, testsetg[,c(6:11, 20:21)])$net.result-testsetg$Pr_Male)^2)
+mse
+```
+
+Optimizing number of nodes in first layer
+```{r}
+for(i in 1:5){
+  nnmaletr <- neuralnet(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=c(i,3), threshold=0.01)
+  print(paste("Number of hidden layer variables in first layer:", i))
+  print(paste("MSE: ", mean((compute(nnmaletr, testsetg[,6:11])$net.result-testsetg$Pr_Male)^2)))
+}
+```
+
+Optimizing number of nodes in second layer
+```{r}
+for(i in 1:5){
+  nnmaletr <- neuralnet(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=c(4,i), threshold=0.01)
+  print(paste("Number of hidden layer variables in second layer:", i))
+  print(paste("MSE: ", mean((compute(nnmaletr, testsetg[,6:11])$net.result-testsetg$Pr_Male)^2)))
+}
+```
+MSE with 2 hidden layers and 4 and 3 nodes: 0.04011755
+MSE with 1 hidden layer and 3 nodes: 0.03988659
+
+```{r}
+linmod<-lm(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed + Weight_kg + Height_m,data=trainsetg)
+mean((predict(linmod,newdata=testsetg)-testsetg$Pr_Male)^2)
+```
+This is pretty close to our neural net modeled above when we use 1 hidden layer and 3 nodes. 
+
+##Neural net predicting hasGender
+```{r}
+library(gclus)
+library(nnet)
+library(NeuralNetTools)
+set.seed(1995)
+gpoke <- cbind(scale(trainset[,c(6:11, 20:22)]), factor(trainset$hasGender))
+colnames(gpoke)[10] <- "hasGender"
+gpoke<-data.frame(gpoke)
+nngend <- nnet(factor(hasGender)~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed + Catch_Rate + Height_m + Weight_kg, data=gpoke, size=5)
+plotnet(nngend)
+table(trainset$hasGender, predict(nngend, type="class"))
+```
+It appears that our neural net is effective in predicting hasGender, and also easy to generate an overfitted model for. 
+1 hidden layer with 11 nodes appears to overfit the model, 
+         1   2
+  False 45   0
+  True    0 460
+  
+Instead 1 hidden layer with 5 nodes appears to have a reasonable misclassification without totally overfitting. Let's try this on gspoketest,
+
+```{r}
+gpoketest <- cbind(scale(trainset[,c(6:11, 20:22)]), factor(testset$hasGender))
+colnames(gpoketest)[10] <- "hasGender"
+gpoketest<-data.frame(gpoketest)
+table(gpoketest$hasGender, predict(nngend, newdata=gpoketest, type="class"))
+```
+
+##Neural net predicting Generation
+```{r}
+library(gclus)
+library(nnet)
+library(neuralnet)
+library(NeuralNetTools)
+set.seed(19127395)
+#nnGeneration <- neuralnet(Generation ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed + Pr_Male,data=trainsetg, hidden=5, threshold=0.01)
+nnGeneration <- neuralnet(Generation ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=5, threshold=0.01)
+plotnet(nnGeneration)
+mse<-mean((compute(nnGeneration, testsetg[,6:11])$net.result-testsetg$Generation)^2)
+mse
+```
+
+Optimizing number of nodes in first layer
+```{r}
+for(i in 1:5){
+  nnmaletr <- neuralnet(Generation ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=3, threshold=0.01)
+  print(paste("Number of hidden layer variables in first layer:", i))
+  print(paste("MSE: ", mean((compute(nnmaletr, testsetg[,6:11])$net.result-testsetg$Pr_Male)^2)))
+}
+```
+
+```{r}
+linmod<-lm(Generation ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg)
+mean((predict(linmod,newdata=testsetg)-testsetg$Generation)^2)
+```
