@@ -1,0 +1,58 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+data = read.csv("pokemon_alopez247.csv", header=T)
+```
+
+```{r}
+summary(data)
+```
+
+#Basic 3d Scatterplots 
+##Evaluating variables, Total, Defense, and Pr_Male
+```{r}
+library(scatterplot3d) 
+attach(pokemon) 
+sp <- scatterplot3d(Total,Defense,Pr_Male, pch=16, highlight.3d=TRUE,
+  type="h", main="3D Scatterplot")
+```
+
+3d Scatterplot without line markers
+```{r}
+library(scatterplot3d)
+attach(pokemon)
+scatterplot3d(Total,Defense,Pr_Male, main="3D Scatterplot")
+```
+
+#Corelation
+```{r}
+library(gclus)
+cleanPoke <- na.omit(pokemon)
+dta <- cleanPoke[c(5:8, 16)] # data, numbers as column numbers 
+dta.r <- abs(cor(dta)) # correlation
+#dta.r[is.na(dta.r)] <- 0.5
+dta.col <- dmat.color(dta.r) # colors
+dta.o <- order.single(dta.r) 
+cpairs(dta, dta.o, panel.colors=dta.col, gap=.5,
+main="Variables Ordered and Colored by Correlation" )
+```
+It may be worth exploring how the correlation changes depending on what value is set to Pr_Male NA values when using "ta.r[is.na(dta.r)] <- 0.5." Below is the correlation jsy between the columns 5:8 for additional clarity. 
+
+```{r}
+library(gclus)
+#cleanPoke <- na.omit(pokemon)
+dta <- pokemon[c(5:8)] # data, numbers as column numbers 
+dta.r <- abs(cor(dta)) # correlation
+dta.col <- dmat.color(dta.r) # colors
+dta.o <- order.single(dta.r) 
+cpairs(dta, dta.o, panel.colors=dta.col, gap=.5,
+main="Variables Ordered and Colored by Correlation" )
+```
