@@ -1,0 +1,759 @@
+---
+title: "DATA 311, All models"
+author: "Barret Jackson, Emily Medema, Kat Lecha, Lauren St. Clair"
+date: "March 30th, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+``` 
+
+```{r setup, include=FALSE}
+pokemon<-read.csv("pokemon_alopez247.csv")
+```
+
+#Number of Pokemon per Type 
+```{r}
+library(ggplot2)
+type<-ggplot(pokemon, aes(pokemon$Type_1, fill = pokemon$Type_1)) + geom_histogram(stat="count", color = "black") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+type
+```
+
+Pokemon dataset split into training and testing sets
+```{r}
+set.seed(1995)
+train<-sample(1:nrow(pokemon),432)
+poke.test<-pokemon[-train,]
+poke.train<-pokemon[train,]
+```
+
+#Linear Model
+Linear model, Total as response and HP, Attack, and Defense are predictors:
+```{r}
+library(DAAG)
+linmod <- lm(poke.train$Total~poke.train$HP+poke.train$Attack+poke.train$Defense)
+summary(linmod)
+#plot(linmod)
+plot(poke.train$HP+poke.train$Attack+poke.train$Defense, poke.train$Total)
+abline(linmod, h = 0.5, col = "red")
+#mmmm tasty sig values
+predicted<-predict(linmod, newdata=poke.test)
+mean(linmod$residuals^2)
+mean((poke.test$Total-predicted)^2)
+```
+
+#Clustering
+Single, Average, and Complete linkage respectively modeled below  
+```{r}
+eucdist<-dist(pokemon, method="euclidean")
+clusPokemon<-hclust(eucdist, method = "single")
+plot(clusPokemon)
+clusPokemonAvg<-hclust(eucdist, method = "average")
+plot(clusPokemonAvg)
+clusComplete<-hclust(eucdist, method = "complete")
+plot(clusComplete)
+```
+We see that a complete linkage method appears to fit our dataset best. 
+
+#Regression Tree, Total as response and HP, Attack, Defense, Sp_Atk, Sp_Def, and Speed as predictors
+```{r}
+library(tree)
+poke<-data.frame(pokemon)
+attach(poke)
+pocl<-tree(Total~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke)
+plot(pocl)
+text(pocl)
+```
+
+Let's try pruning back our tree from above,
+```{r}
+cv.pocl<-cv.tree(pocl, FUN=prune.tree)
+plot(cv.pocl,type="b")
+p.pocl<-prune.tree(pocl,best=10)
+plot(p.pocl)
+text(p.pocl)
+summary(p.pocl)
+```
+We can see that the lowest is MSE is given with 12 nodes, suggesting that pruning may be unnecessary.
+
+#Random Forests
+```{r}
+library(randomForest)
+set.seed(1995)
+pokebag<-randomForest(Total~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke,mtry=6,importance=FALSE)
+pokebag
+```
+
+Random forest where m = 3
+```{r}
+pokeRF<-randomForest(Total~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke,mtry=3,importance=TRUE)
+pokeRF
+```
+
+Let's see if we can predict if a Pokemon is legendary using the Total predictor. In using the predictor Total, we are under the assumption that legendary Pokemon have high totals. From looking at the data set this appears to be true. It also appears from the data set that legendary Pokemon do not have a gender expecept for a couple outliers. Let's see if this is the case,
+```{r}
+#https://www.kaggle.com/excaliburzero/predicting-legendary-pokemon
+maxTotal<-order(pokemon$Total, decreasing = TRUE)
+head(pokemon[maxTotal,])
+```
+It does appear that the Pokemon with the highest total are in fact of the legendary type. 
+
+```{r}
+library(ggplot2)
+plot<-ggplot(pokemon, aes(x =Total, fill = isLegendary)) + geom_histogram()
+plot
+```
+From this graph we can see that the higher the total the more likely a pokemon is to be legendary. In fact, it appears that a pokemon is only legendary when it is above 650 in total and most likely legendary from around 550-625.
+
+Let's now check the correlation between gender and legendary status,
+```{r}
+pokemon$hasGender<-factor(pokemon$hasGender)
+plot2<-ggplot(pokemon, aes(x =hasGender, fill = isLegendary)) + geom_bar()
+plot2
+```
+As our first assumption suggested, the plot too suggests that majority of legendary pokemon (isLegendary = TRUE), do not have a gender (hasGender = FALSE). 
+
+Let's see if there are any linear relationships within our Pokemon dataset. Name and Number will be excluded from examination as these will likely have no effect on the data. 
+
+#K-Means
+```{r}
+library(mclust)
+library(cluster)
+library(dplyr)
+library(fpc)
+pokeNum<-select_if(pokemon, is.numeric)
+distPoke<-daisy(pokemon)
+#distPoke<-daisy(pokeNum)
+summary(distPoke)
+pokeDist<-cmdscale(distPoke)
+plot(pokeDist, type = "n")
+text(pokeDist, rownames(pokeDist))
+set.seed(413)
+clustore<-matrix(0, nrow = 721, ncol=25)
+wsstore<-NULL
+for(i in 1:10){
+  km<-kmeans(pokeDist, i, nstart=10)
+  clustore[,i]<-km$cluster
+  wsstore[i]<-km$tot.withinss
+}
+plot(wsstore)
+kPoke2<-kmeans(pokeDist, 7, nstart=25)
+plot(pokeDist, col = kPoke2$cluster)
+points(kPoke2$centers, col = 1:4, pch=8, cex=2)
+out <- cbind(pokemon, clusterNum = kPoke2$cluster)
+clusterGroups<-order(out$clusterNum, decreasing = TRUE)
+head(out[clusterGroups,])
+```
+
+ 
+#KNN Classification
+```{r}
+library(class)
+knnrun<-knn.cv(pokeDist, cl = poke.train$isLegendary, k = 5, prob = TRUE)
+table(poke.train$isLegendary, knnrun)
+```
+
+#Linear Discriminant Analysis 
+```{r}
+library(MASS)
+library(MLmetrics)
+poke.train$hasGender<-factor(poke.train$hasGender)
+poke.train$isLegendary<-factor(poke.train$isLegendary)
+pokelda<-lda(poke.train$isLegendary~poke.train$hasGender+poke.train$Total)
+table(poke.train$isLegendary, predict(pokelda)$class)
+Sensitivity(poke.train$isLegendary, predict(pokelda)$class)
+Recall(poke.train$isLegendary, predict(pokelda)$class) #same as sensitivity
+Precision(poke.train$isLegendary, predict(pokelda)$class)
+Specificity(poke.train$isLegendary, predict(pokelda)$class)
+F1_Score(poke.train$isLegendary, predict(pokelda)$class)
+```
+
+#QDA
+```{r}
+pokeqda<-qda(poke.train$isLegendary~poke.train$hasGender+poke.train$Total)
+table(poke.train$isLegendary, predict(pokeqda)$class)
+Sensitivity(poke.train$isLegendary, predict(pokelda)$class)
+Recall(poke.train$isLegendary, predict(pokeqda)$class) #same as sensitivity
+Precision(poke.train$isLegendary, predict(pokeqda)$class)
+Specificity(poke.train$isLegendary, predict(pokeqda)$class)
+F1_Score(poke.train$isLegendary, predict(pokeqda)$class)
+```
+
+#Logistic Regression
+```{r}
+simlog<-glm(factor(poke.train$isLegendary)~poke.train$hasGender+poke.train$Total, family = "binomial")
+table(predict(simlog, type = "response")>0.5, poke.train$isLegendary)
+```
+
+```{r}
+#https://www.kaggle.com/excaliburzero/predicting-legendary-pokemon
+poke<-data.frame(pokemon)
+pokeLegend<-poke[which(isLegendary=='True'),]
+plot(Generation~isLegendary)
+TheLegends<-as.data.frame(table(pokeLegend$Generation))
+colnames(TheLegends)<-c("Generation", "Legends")
+TheLegends
+summary(TheLegends)
+plot<-ggplot(TheLegends, aes(Generation, Legends))+geom_bar(stat="identity")
+plot
+TheMan<-as.data.frame(table(pokeLegend$Type_1))
+colnames(TheMan)<-c("Type 1", "Legends")
+TheMan
+summary(TheMan)
+plot(TheMan)
+maxTotalL<-order(TheMan$Legends, decreasing = TRUE)
+head(TheMan[maxTotalL,])
+#Of Type 2
+TheMyth<-as.data.frame(table(pokeLegend$Type_2))
+colnames(TheMyth)<-c("Type 2", "Legends")
+TheMyth
+summary(TheMyth)
+plot(TheMyth)
+maxTotalL2<-order(TheMyth$Legends, decreasing = TRUE)
+head(TheMyth[maxTotalL2,])
+```
+
+```{r}
+poke<-data.frame(pokemon)
+poke1<-poke[which(hasGender=='True'),]
+attach(poke)
+head(poke1)
+```
+
+Let's see if there is a relationshp between Score and Pr_Male, a predictor for the probability of gender according to male
+```{r}
+set.seed(983457)
+pokeG<-tree(Pr_Male~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed + Total,data=poke1)
+plot(pokeG)
+text(pokeG, pretty=0)
+cv.pokeG<-cv.tree(pokeG, FUN=prune.tree)
+plot(cv.pokeG)
+prunePokeG<-prune.tree(pokeG, best=12)
+plot(prunePokeG)
+text(prunePokeG, pretty=0)
+```
+
+#K-Means
+```{r}
+library(mclust)
+library(cluster)
+library(dplyr)
+library(fpc)
+pokeNum<-select_if(pokemon, is.numeric)
+distPoke<-daisy(pokemon)
+summary(distPoke)
+pokeDist<-cmdscale(distPoke)
+plot(pokeDist, type = "n")
+text(pokeDist, rownames(pokeDist))
+set.seed(413)
+clustore<-matrix(0, nrow = 721, ncol=25)
+wsstore<-NULL
+for(i in 1:10){
+  km<-kmeans(pokeDist, i, nstart=10)
+  clustore[,i]<-km$cluster
+  wsstore[i]<-km$tot.withinss
+}
+plot(wsstore)
+kPoke2<-kmeans(pokeDist, 7, nstart=25)
+plot(pokeDist, col = kPoke2$cluster)
+points(kPoke2$centers, col = 1:4, pch=8, cex=2)
+out <- cbind(pokemon, clusterNum = kPoke2$cluster)
+clusterGroups<-order(out$clusterNum, decreasing = TRUE)
+out[clusterGroups,]
+```
+
+Ok, let's check out the mean for Total for each cluster
+
+```{r}
+for(i in 1:7) {
+  print(paste("Mean for total for cluster ",i))
+  print(mean(out[which(out$clusterNum==i),]$Total))
+}
+```
+
+Ok, how about the number of isLegendary in each cluster
+
+```{r}
+for(i in 1:7) {
+  print(paste("Number of isLegendary for cluster ",i))
+  legendTemp<-out[which(out$clusterNum==i),]
+  print(count(legendTemp,vars=isLegendary))
+}
+```
+
+Ok, that didnt' look great, but it looks like isLegendary==TRUE are mostly in clusters 2 and 4.
+
+
+##Creating a subset with only pokemon that have a gender
+
+```{r}
+pokemon<-read.csv("pokemon_alopez247.csv")
+poke<-data.frame(pokemon)
+```
+
+
+```{r}
+attach(poke)
+poke1<-poke[which(hasGender=='True'),]
+head(poke1)
+length(poke1[,1])
+```
+
+##Trees on the new data set
+
+```{r}
+attach(poke1)
+library(tree)
+pocl<-tree(Pr_Male~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke1)
+plot(pocl)
+text(pocl)
+```
+
+Ok, let's prune this tree down now...
+
+```{r}
+j<-sample(0,10000,100)
+size<-{}
+for(i in 1:100) {
+  set.seed(i)
+  cv.pocl<-cv.tree(pocl, FUN=prune.tree)
+  thing<-cv.pocl$size[which.min(cv.pocl$dev)]
+  size[i]<-thing
+}
+hist(size)
+sort(table(size),decreasing=TRUE)[1:3]
+```
+
+```{r}
+p.pocl<-prune.tree(pocl,best=3)
+plot(p.pocl)
+text(p.pocl)
+summary(p.pocl)
+```
+
+Alright, let's use bagging now...
+
+```{r}
+library(randomForest)
+set.seed(1995)
+pokebag<-randomForest(Pr_Male~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke1,mtry=6,importance=TRUE)
+pokebag
+varImpPlot(pokebag)
+```
+
+Well that didn't work out very well...
+
+How about random forest...
+
+```{r}
+pokeRF<-randomForest(Pr_Male~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke1,mtry=3,importance=TRUE)
+pokeRF
+varImpPlot(pokeRF)
+```
+Very slightly better, still not a lot of evidence that this model is any good.
+
+
+
+```{r}
+pokemon<-read.csv("pokemon_alopez247.csv")
+poke <- data.frame(pokemon, stringsAsFactors = TRUE)
+poke[is.na(poke)] <- 0
+poke$isLegendary<-(as.integer(factor(poke$isLegendary))-1)
+poke$hasGender<-(as.integer(factor(poke$hasGender))-1)
+poke<-poke[,-c(1,2)]
+set.seed(1995)
+train<-sample(1:nrow(poke),432)
+poke.train<-poke[train,]
+poke.test<-poke[-train,]
+```
+
+##LDA
+```{r}
+#install.packages(MASS)
+library(MASS)
+pkmlda<- lda(poke$hasMegaEvolution~poke$hasGender+poke$Type_1+poke$Total+poke$Generation+poke$Pr_Male+poke$isLegendary, data=poke, CV=TRUE)
+table(poke$hasMegaEvolution, pkmlda$class)
+```
+```{r}
+pkmlda<- lda(poke$isLegendary~poke$hasMegaEvolution+poke$Total+poke$hasGender+poke$Pr_Male, data=poke, CV=TRUE)
+table(poke$hasMegaEvolution, pkmlda$class)
+```
+```{r}
+pkmlda<- lda(poke$isLegendary~poke$hasGender+poke$Pr_Male, data=poke, CV=TRUE)
+table(poke$isLegendary, pkmlda$class)
+```
+
+```{r}
+pkmlda<- lda(poke$isLegendary~poke$Type_1+poke$Type_2, data=poke, CV=TRUE)
+table(poke$isLegendary, pkmlda$class)
+```
+
+##KNN
+```{r}
+poke<-data.frame(pokemon)
+#remove unique identifiers
+poke<-poke[,-c(1,2)]
+```
+This block removes all NA values for Pr_Male.
+```{r}
+#the new dataset poke2 has all na values fr Pr_Male removed
+poke2<-poke[which(hasGender=='True'),]
+poke2
+```
+```{r}
+for(j in 1:ncol(poke2)){
+  if(!is.numeric(poke2[,j]) ){
+      poke2[,j]<-(as.numeric(poke2[,j]))
+  }
+}
+poke2$isLegendary <- (poke2$isLegendary - 1)
+poke2$hasMegaEvolution <- (poke2$hasMegaEvolution - 1)
+poke2$hasGender <- (poke2$hasGender - 1)
+```
+
+```{r}
+poke<-data.frame(pokemon)
+#remove unique identifiers
+poke<-poke[,-c(1,2)]
+```
+
+```{r}
+for(j in 1:ncol(poke)){
+  if(!is.numeric(poke[,j]) ){
+      poke[,j]<-(as.numeric(poke[,j]))
+  }
+}
+poke$isLegendary <- (poke$isLegendary - 1)
+poke$hasMegaEvolution <- (poke$hasMegaEvolution - 1)
+poke$hasGender <- (poke$hasGender - 1)
+```
+
+
+## Logistic Regression
+
+```{r}
+library(class)
+library(boot)
+library("gclus")
+# typeglm <- glm(poke.train$hasGender~poke.train$Type_1 + poke.train$Type_2, data=poke.train)
+# typeglm
+# predgend<- predict(typeglm, newdata = poke.test, type= "response")
+# predgend
+# predgend2<- predgend[c(1:289)]
+# length(poke.test$hasGender)
+# table(predgend2>0.5, poke.test$hasGender)
+```
+isLegendary ~ hasGender + Catch_Rate
+
+```{r}
+pokeglm<- glm(isLegendary ~ hasGender + Catch_Rate, family = "binomial", data = poke)
+summary(pokeglm)
+```
+
+ok so the t test variable selection says all of the variables are important.
+This might be Type 1 error??? (probs nah tbh why would a legendary pokemon need a gender or be easy to catch?)
+
+
+Leave One Out Cross Validation!
+```{r}
+attach(poke2)
+pokeglm <- list()
+cv.mse <- NA
+for(i in 1:nrow(poke)){
+  cvisLeg <- poke$isLegendary[-i]
+  cvhasGend <- poke$hasGender[-i]
+  cvCatchR <- poke$Catch_Rate[-i]
+  
+  pokeglm[[i]]<- glm(cvisLeg ~ cvhasGend + cvCatchR, family = "binomial")
+  cv.mse[i] <- (predict(pokeglm[[i]], newdata = data.frame(poke$isLegendary[i])) - poke$isLegendary[i])^2
+  
+}
+mean(cv.mse)
+```
+
+See what a regression tree looks like using total as the predictor and hp, attack, defense, sp_atk, sp_def, and speed as predictors.
+```{r}
+pokemon<-read.csv("pokemon_alopez247.csv")
+library(tree)
+poke<-data.frame(pokemon)
+attach(poke)
+pocl<-tree(Total~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke)
+plot(pocl)
+text(pocl)
+```
+
+Now let's try pruning it back
+
+```{r}
+cv.pocl<-cv.tree(pocl, FUN=prune.tree)
+plot(cv.pocl,type="b")
+p.pocl<-prune.tree(pocl,best=10)
+plot(p.pocl)
+text(p.pocl)
+summary(p.pocl)
+```
+
+Looks like pruning was unnecessary since the lowest MSE is with 12 nodes...
+
+How about with bagging...
+
+```{r}
+library(randomForest)
+set.seed(1995)
+pokebag<-randomForest(Total~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke,mtry=6,importance=FALSE)
+pokebag
+```
+Random forest where m=3
+```{r}
+pokeRF<-randomForest(Total~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke,mtry=3,importance=TRUE)
+pokeRF
+```
+
+
+
+##PCA
+
+Alright, let's check out PCA on Pr_Male response with ...stats as predictors
+
+```{r}
+head(poke)
+```
+
+```{r}
+pcapoke <- prcomp(as.matrix(poke[,6:11]), scale.=TRUE)
+summary(pcapoke)
+biplot(pcapoke)
+```
+
+Ok cool, two principal components satisfy the Kaiser criterion. Let's take a look at which predictors influence these components...
+
+```{r}
+round(pcapoke$rotation[,1:2], 2)
+```
+
+Ok, so looks like PC1 refers to kind of all around, balanced pokemon, and PC2 refers to slow defenders with bad HP? I don't think this model is all that great... But, let's see which pokemon each component is referring to.
+
+```{r}
+poke[order(pcapoke$x[,1], decreasing=TRUE)[1:4] , 1:11]
+```
+
+```{r}
+poke[order(pcapoke$x[,2], decreasing=TRUE)[1:4] , 1:11]
+```
+
+The first component doesn't really seem to refer to much at all, just kind of all around generalists maybe. The totals are quite high though, so maybe these are the powerhouses? Wait, let's see how many of them are legendary...
+
+```{r}
+poke[order(pcapoke$x[,1], decreasing=TRUE)[1:20],]
+```
+
+
+The first 13 are legendary, this is a good sign. Let's see how PC1 correlates with isLegendary...
+
+```{r}
+library(MASS)
+pcleg<-data.frame(pcapoke$x)
+pcleg[1:20,]
+leglda <- lda(factor(poke$isLegendary)~PC1+PC2,data=pcleg)
+leglda
+```
+
+I might just be high, but I'm pretty sure this indicates PC1 is a pretty good predictor for isLegendary. PC2 doesn't really seem to refer to anything here...
+
+
+##Gender PCA
+
+Ok, now let's run PCA on the subset that has a gender
+
+```{r}
+pcagenpoke <- prcomp(as.matrix(poke1[,6:11]), scale.=TRUE)
+summary(pcagenpoke)
+biplot(pcagenpoke)
+```
+
+Ok cool, two principal components satisfy the Kaiser criterion. Let's take a look at which predictors influence these components...
+
+```{r}
+round(pcagenpoke$rotation[,1:2], 2)
+```
+This is looking pretty similar to the full dataset! But, let's see which pokemon each component is referring to.
+
+```{r}
+poke[order(pcagenpoke$x[,1], decreasing=TRUE)[1:4] , 1:11]
+```
+
+
+```{r}
+poke[order(pcagenpoke$x[,2], decreasing=TRUE)[1:4] , 1:11]
+```
+
+The first component doesn't really seem to refer to much at all, just kind of all around generalists maybe. The totals are quite high though, so maybe these are the powerhouses? Wait, let's see how many of them are legendary...
+
+```{r}
+poke[order(pcagenpoke$x[,1], decreasing=TRUE)[1:20],]
+```
+
+
+The first 13 are legendary, this is a good sign. Let's see how PC1 correlates with isLegendary...
+
+```{r}
+library(MASS)
+pcgenleg<-data.frame(pcagenpoke$x)
+pcgenleg[1:20,]
+leggenlda <- lda(factor(poke1$isLegendary)~pcgenleg[,1]+pcgenleg[,2],data=pcgenleg)
+leggenlda
+```
+
+Ok now let's look at a classification table:
+
+```{r}
+lda.pred<-predict(leggenlda,poke1)
+lda.class<-lda.pred$class
+table(lda.class,poke1$isLegendary)
+```
+
+So LDA using PC1 and PC2 basically amounts to a naive classifier classifying everything "False" for isLegendary. Let's see if univariate LDA with PC1 only does any better.
+
+```{r}
+leggenlda1 <- lda(factor(poke1$isLegendary)~pcgenleg[,1],data=pcgenleg)
+leggenlda1
+```
+
+```{r}
+lda.pred<-predict(leggenlda1,poke1)
+lda.class<-lda.pred$class
+table(lda.class,poke1$isLegendary)
+```
+
+Yea, this is still a naive classifier, NOT VERY USEFUL!
+
+Let's try a linear model, see if PC1 and PC2 are any good at predicting Pr_Male:
+
+```{r}
+linmod<-lm(poke1$Pr_Male~pcgenleg[,1]+pcgenleg[,2])
+summary(linmod)
+linmod<-lm(poke1$Pr_Male~pcgenleg[,1])
+summary(linmod)
+plot(pcgenleg[,1],poke1$Pr_Male)
+abline(linmod)
+```
+
+Ok, so the second model is statistically significant. So let's try to interpret this now. The intercept on this linear model is 0.55, which is already above 50%. Oh man that graph looks like garbage. I don't think PCA really did anything here...
+
+
+```{r}
+# linmod<-lm(poke1$Catch_Rate~pcgenleg[,1]+pcgenleg[,2])
+# summary(linmod)
+linmod<-lm(poke1$Catch_Rate~pcgenleg[,1])
+summary(linmod)
+plot(pcgenleg[,1],poke1$Catch_Rate)
+abline(linmod)
+```
+
+Ok, now we're talking. So it looks like PC1 is correlated with the harder to catch Pokemon rather than the legendary ones. Probably a good time to start a new file, this is getting messy...
+
+```{r}
+set.seed(1995)
+train<-sample(1:nrow(poke),432)
+poke.test<-poke[-train,]
+poke.train<-poke[train,]
+```
+
+#Neural Networks
+```{r}
+library(gclus)
+library(nnet)
+library(NeuralNetTools)
+set.seed(1995)
+spoke <- cbind(scale(trainset[,6:11]), factor(trainset$isLegendary))
+colnames(spoke)[7] <- "isLegendary"
+spoke<-data.frame(spoke)
+nnpoke <- nnet(factor(isLegendary)~., data=spoke, size=5)
+table(trainset$isLegendary, predict(nnpoke, type="class"))
+plotnet(nnpoke)
+```
+
+```{r}
+spoke
+```
+
+```{r}
+spoketest <- cbind(scale(testset[,6:11]), factor(testset$isLegendary))
+colnames(spoketest)[7] <- "isLegendary"
+spoketest<-data.frame(spoketest)
+table(spoketest$isLegendary, predict(nnpoke, newdata=spoketest, type="class"))
+```
+
+```{r}
+attach(data)
+trainsetg<-trainset[which(hasGender=='True'),]
+testsetg<-testset[which(hasGender=='True'),]
+trainsetg<-na.omit(trainsetg)
+trainsetg
+testsetg<-na.omit(testsetg)
+testsetg
+```
+
+#Neural Net predicting Pr_Male
+
+Optimizing number of nodes in first layer
+```{r}
+for(i in 1:5){
+  nnmaletr <- neuralnet(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=c(i,3), threshold=0.01)
+  print(paste("Number of hidden layer variables in first layer:", i))
+  print(paste("MSE: ", mean((compute(nnmaletr, testsetg[,6:11])$net.result-testsetg$Pr_Male)^2)))
+}
+```
+
+Optimizing number of nodes in second layer
+```{r}
+for(i in 1:5){
+  nnmaletr <- neuralnet(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=c(4,i), threshold=0.01)
+  print(paste("Number of hidden layer variables in second layer:", i))
+  print(paste("MSE: ", mean((compute(nnmaletr, testsetg[,6:11])$net.result-testsetg$Pr_Male)^2)))
+}
+```
+
+```{r}
+set.seed(906534)
+nnmale <- neuralnet(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=3, threshold=0.01)
+plotnet(nnmale)
+mse<-mean((compute(nnmale, testsetg[,6:11])$net.result-testsetg$Pr_Male)^2)
+mse
+```
+MSE with 2 hidden layers and 4 and 3 nodes: 0.04011755
+MSE with 1 hidden layer and 3 nodes: 0.03988659
+
+
+```{r}
+linmod<-lm(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg)
+mean((predict(linmod,newdata=testsetg)-testsetg$Pr_Male)^2)
+```
+This is pretty close to our neural net modeled above when we use 1 hidden layer and 3 nodes. 
+
+#Neural Net, predicting Generation
+```{r}
+set.seed(12345)
+library(neuralnet)
+nnGen <- neuralnet(Generation ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=4, threshold=0.01)
+plotnet(nnGen)
+```
+
+```{r}
+mse<-mean((compute(nnGen, testsetg[,6:11])$net.result-testsetg$Generation)^2)
+mse
+```
+MSE without Pr_Male, 2 hidden 4 and 3 nodes
+1.28986
+MSE without Pr_Male included, 5 nodes 1 hidden
+1.349612
+MSE with Pr_Male included, 5 nodes 1 hidden
+1.466631
+
+```{r}
+spoketest <- cbind(scale(testsetg[,6:11]), factor(testsetg$Generation))
+colnames(spoketest)[7] <- "Generation"
+spoketest<-data.frame(spoketest)
+table(spoketest$isLegendary, predict(nnGen, newdata=spoketest, type="class"))
+```
