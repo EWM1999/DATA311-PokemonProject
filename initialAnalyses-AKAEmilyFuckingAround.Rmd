@@ -311,23 +311,30 @@ prunePokeG<-prune.tree(pokeG, best=3)
 plot(prunePokeG)
 text(prunePokeG, pretty=0)
 summary(prunePokeG)
+summary(pokeG)
 ```
 
 
 ```{r}
 head(poke1)
 countM<-0
+maleProb<-vector()
 countF<-0
+femaleP<-vector()
 fifty<-0
+splitP<-vector()
 for(i in 1:nrow(poke1)){
   if(poke1[i,16]>0.5){
     countM<-countM + 1
+    maleProb<-c(maleProb, poke[i,16])
   }
   if(poke1[i,16]==0.5){
     fifty<-fifty + 1
+    splitP<-c(splitP, poke[i,16])
   }
   if(poke1[i,16]<0.5){
     countF<-countF+1
+    femaleP<-c(femaleP, poke[i,16])
   }
 }
 vect<-cbind(countM, fifty, countF)
@@ -335,5 +342,6 @@ vect
 library(wesanderson)
 sp<-ggplot(poke1, aes(poke1$Pr_Male, fill = poke1$Pr_Male)) + geom_histogram(stat="count", color = "black", fill = wes_palette("FantasticFox1", 7, type = "continuous")) 
 sp
+
 ```
 
