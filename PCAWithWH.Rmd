@@ -1,0 +1,80 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+pokemon<-read.csv("pokemon_alopez247.csv")
+poke<-data.frame(pokemon)
+```
+
+```{r}
+pcapoke <- prcomp(as.matrix(poke[,c(6:11, 20:21)]), scale.=TRUE)
+summary(pcapoke)
+biplot(pcapoke)
+```
+
+
+```{r}
+round(pcapoke$rotation[,1:2], 2)
+```
+
+
+```{r}
+poke[order(pcapoke$x[,1], decreasing=TRUE)[1:4] , c(1:11, 20:21)]
+```
+
+```{r}
+poke[order(pcapoke$x[,2], decreasing=TRUE)[1:4] , c(1:11, 20:21)]
+```
+
+```{r}
+poke[order(pcapoke$x[,1], decreasing=TRUE)[1:20],]
+```
+
+Majority are of the legendary type
+
+
+```{r}
+lda.pred<-predict(leggenlda1,poke1)
+lda.class<-lda.pred$class
+table(lda.class,poke1$isLegendary)
+```
+
+Yea, this is still a naive classifier, NOT VERY USEFUL!
+
+Let's try a linear model, see if PC1 and PC2 are any good at predicting Pr_Male:
+
+```{r}
+linmod<-lm(poke1$Pr_Male~pcgenleg[,1]+pcgenleg[,2])
+summary(linmod)
+linmod<-lm(poke1$Pr_Male~pcgenleg[,1])
+summary(linmod)
+plot(pcgenleg[,1],poke1$Pr_Male)
+abline(linmod)
+```
+
+Ok, so the second model is statistically significant. So let's try to interpret this now. The intercept on this linear model is 0.55, which is already above 50%. Oh man that graph looks like garbage. I don't think PCA really did anything here...
+
+
+```{r}
+# linmod<-lm(poke1$Catch_Rate~pcgenleg[,1]+pcgenleg[,2])
+# summary(linmod)
+linmod<-lm(poke1$Catch_Rate~pcgenleg[,1])
+summary(linmod)
+plot(pcgenleg[,1],poke1$Catch_Rate)
+abline(linmod)
+```
+
+Ok, now we're talking. So it looks like PC1 is correlated with the harder to catch Pokemon rather than the legendary ones. Probably a good time to start a new file, this is getting messy...
+
+```{r}
+set.seed(1995)
+train<-sample(1:nrow(poke),432)
+poke.test<-poke[-train,]
+poke.train<-poke[train,]
+```
