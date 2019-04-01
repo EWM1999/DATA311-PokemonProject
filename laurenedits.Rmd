@@ -36,7 +36,7 @@ scatterplot3d(Total,Defense,Pr_Male, main="3D Scatterplot")
 ```{r}
 library(gclus)
 cleanPoke <- na.omit(pokemon)
-dta <- cleanPoke[c(5:8, 16)] # data, numbers as column numbers 
+dta <- cleanPoke[c(6:8, 16)] # data, numbers as column numbers 
 dta.r <- abs(cor(dta)) # correlation
 #dta.r[is.na(dta.r)] <- 0.5
 dta.col <- dmat.color(dta.r) # colors
