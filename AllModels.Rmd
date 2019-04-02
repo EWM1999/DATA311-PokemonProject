@@ -564,7 +564,7 @@ text(prunePokeG, pretty=0)
 
 ```{r}
 attach(poke)
-poke1<-poke[which(hasGender=='True'),]
+poke1<-poke[which(hasGender==1),]
 head(poke1)
 length(poke1[,1])
 ```
