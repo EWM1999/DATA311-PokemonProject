@@ -224,26 +224,29 @@ pokeRF2
 ```
 
  
-<!-- #KNN Classification -->
-<!-- ```{r} -->
-<!-- set.seed(1995) -->
-<!-- train<-sample(1:nrow(pokemon),432) -->
-<!-- poke.test<-pokemon[-train,] -->
-<!-- poke.train<-pokemon[train,] -->
-<!-- poke.trainNum<-factor(poke.train) -->
-<!-- poke.trainNum<-as.numeric(poke.trainNum) -->
-<!-- poke.train<-data.frame((poke.trainNum)) -->
-<!-- dim(poke.trainNum) -->
-<!-- length(poke.train$isLegendaryNum) -->
+#KNN Classification
 
-<!-- library(class) -->
-<!-- knnrun<-knn.cv(poke.trainNum, cl = poke.trainNum$isLegendary, k = 5, prob = TRUE) -->
-<!-- table(poke.trainNum$isLegendary, knnrun) -->
+First we'll create testing and training sets and data frames with the predictors we're looking at on both sets, as well as a vector of responses.
 
-<!-- library(class) -->
-<!-- knnrun<-knn.cv(pokeDist, cl = poke.train$isLegendary, k = 5, prob = TRUE) -->
-<!-- table(poke.train$isLegendary, knnrun) -->
-<!-- ``` -->
+```{r}
+set.seed(1995)
+train<-sample(1:nrow(pokemon),432)
+poke.test<-pokemon[-train,]
+poke.train<-pokemon[train,]
+train.x<-cbind(HP,Attack,Defense,Sp_Atk,Sp_Def,Speed,Height_m,Weight_kg,Catch_Rate)[train,]
+test.x<-cbind(HP,Attack,Defense,Sp_Atk,Sp_Def,Speed,Height_m,Weight_kg,Catch_Rate)[-train,]
+train.legend<-isLegendary[train]
+```
+
+Now we'll run KNN on the testing data set using the training data and see how it does as a classifier.
+
+```{r}
+library(class)
+knnLegend.pred<-knn(train.x,test.x,train.legend,k=5)
+table(knnLegend.pred,poke.test$isLegendary)
+```
+
+Pretty great!
 
 
 #Linear Discriminant Analysis 
