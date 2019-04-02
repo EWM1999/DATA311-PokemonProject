@@ -78,3 +78,7 @@ train<-sample(1:nrow(poke),432)
 poke.test<-poke[-train,]
 poke.train<-poke[train,]
 ```
+
+```{r}
+poke[which(poke$Type_1=='Fairy'),]
+```

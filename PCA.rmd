@@ -15,14 +15,18 @@ poke<-data.frame(pokemon)
 ```
 
 
-```{r}
+```{r warning=FALSE}
 attach(poke)
-poke1<-poke[which(hasGender=='True'),]
-poke1<-poke1[,c(6:11,20:21)]
+# poke1<-poke[which(hasGender=='True'),]
+poke2<-poke[,c(6:11,20:21)]
 ```
 
 ```{r}
-pcapoke <- prcomp(as.matrix(poke1), scale=TRUE)
+# poke1[which(poke1$isLegendary=='True'),]
+```
+
+```{r}
+pcapoke <- prcomp(as.matrix(poke2), scale=TRUE)
 summary(pcapoke)
 biplot(pcapoke)
 ```
@@ -30,4 +34,148 @@ biplot(pcapoke)
 
 ```{r}
 round(pcapoke$rotation[,1:2], 2)
+```
+
+
+```{r}
+# library(MASS)
+pc<-data.frame(pcapoke$x)
+pc[1:20,]
+
+linmod<-lm(poke$Catch_Rate~pc[,1]+pc[,2])
+summary(linmod)
+
+linmod1<-lm(poke$Catch_Rate~pc[,1])
+summary(linmod1)
+
+linmod2<-lm(poke$Catch_Rate~pc[,2])
+summary(linmod2)
+
+plot(pc[,1],poke$Catch_Rate)
+abline(linmod1)
+
+plot(pc[,2],poke$Catch_Rate)
+abline(linmod2)
+```
+
+Useless
+
+
+##CLASSIFICATION USING PCA
+
+
+Convert isLegendary to a binary output
+
+```{r}
+legendPoke<-poke$isLegendary
+legendPoke<-as.numeric(legendPoke)-1
+# legendPoke<-as.logical(legendPoke)
+legendPoke
+```
+
+```{r}
+library(MASS)
+leggenlda <- lda(factor(poke$isLegendary)~pc[,2])
+leggenlda
+```
+
+```{r}
+lda.pred<-predict(leggenlda,poke)
+lda.class<-lda.pred$class
+table(lda.class,poke$isLegendary)
+```
+
+```{r}
+library(MLmetrics)
+LogLoss(predict(leggenlda,type="prob")$posterior,legendPoke)
+```
+
+Useless
+
+```{r}
+pclog<-glm(factor(poke$isLegendary)~pc[,1], family = "binomial")
+table(predict(pclog, type = "response")>0.5, poke$isLegendary)
+
+```
+
+Better?...
+
+##TREES ON PCA!!!
+
+Simple tree
+
+```{r}
+library(tree)
+pccl<-tree(poke$isLegendary~pc[,1]+pc[,2])
+plot(pccl)
+text(pccl)
+summary(pccl)
+table(predict(pccl,poke,type="class"),poke$isLegendary)
+```
+
+```{r}
+LogLoss(predict(pccl)[,2],legendPoke)
+```
+
+```{r}
+# j<-sample(0,10000,100)
+# size<-{}
+# for(i in 1:100) {
+#   set.seed(i)
+#   cv.pccl<-cv.tree(pccl, FUN=prune.misclass)
+#   size[i]<-cv.pccl$size[which.min(cv.pccl$dev)]
+# }
+# hist(size)
+# sort(table(size),decreasing=TRUE)[1:3]
+
+cv.pccl<-cv.tree(pccl,FUN=prune.misclass)
+plot(cv.pccl,type="b")
+cv.pccl
+```
+
+```{r}
+pr.pccl<-prune.misclass(pccl,best = 6)
+plot(pr.pccl)
+text(pr.pccl)
+table(predict(pr.pccl,poke,type="class"),poke$isLegendary)
+LogLoss(predict(pr.pccl)[,2],legendPoke)
+```
+
+```{r}
+library(randomForest)
+set.seed(1995)
+pcbag<-randomForest(poke$isLegendary~pc[,1]+pc[,2],mtry=2,importance=TRUE)
+pcbag
+varImpPlot(pcbag)
+```
+
+```{r}
+
+```
+
+```{r}
+LogLoss(predict(pcbag,type="prob")[,2],legendPoke)
+```
+
+```{r}
+table(predict(pcbag,poke,type="class"),poke$isLegendary)
+```
+
+```{r}
+set.seed(1995)
+pcrf<-randomForest(poke$isLegendary~pc[,1]+pc[,2],mtry=1,importance=TRUE)
+pcrf
+varImpPlot(pcrf)
+```
+
+
+
+```{r}
+library(MLmetrics)
+LogLoss(predict(pcrf,type="prob")[,2],legendPoke)
+
+```
+
+```{r}
+table(predict(pcbag,poke,type="class"),poke$isLegendary)
 ```
