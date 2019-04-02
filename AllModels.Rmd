@@ -367,7 +367,7 @@ This might be Type 1 error??? (probs nah tbh why would a legendary pokemon need 
 
 
 Leave One Out Cross Validation!
-```{r}
+```{r warning=FALSE}
 
 attach(poke)
 pokeglm <- list()
