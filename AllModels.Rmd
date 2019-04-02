@@ -411,6 +411,98 @@ poke.test<-poke[-train,]
 poke.train<-poke[train,]
 ```
 
+#PCA for Legendary
+
+Create PCA model
+
+```{r}
+poke<-data.frame(pokemon)
+poke2<-poke[,c(6:11,20:21)]
+pcapoke <- prcomp(as.matrix(poke2), scale=TRUE)
+summary(pcapoke)
+biplot(pcapoke)
+```
+
+Despite only accounting for 58% of the variance in the model, the Kaiser criterion would suggest keeping the first two principal components.
+
+```{r}
+round(pcapoke$rotation[,1:2], 2)
+```
+
+Looking at the first two principal components, the first has a high loading on most numeric stats.
+
+Several analyses were run using the principal components, none of which proved to be very useful, EXCEPT FOR...
+
+##Classification trees on PCA
+
+First, a simple tree
+
+```{r}
+library(tree)
+pccl<-tree(poke$isLegendary~pc[,1]+pc[,2])
+plot(pccl)
+text(pccl)
+summary(pccl)
+table(predict(pccl,poke,type="class"),poke$isLegendary)
+```
+
+ALthough this model does relatively well on prediction, it seems needlessly complex, so we'll try pruning down.
+
+```{r}
+cv.pccl<-cv.tree(pccl,FUN=prune.misclass)
+plot(cv.pccl,type="b")
+cv.pccl
+```
+
+Cross-validation suggests six terminal nodes does as well as the original ten, let's see.
+
+```{r}
+pr.pccl<-prune.misclass(pccl,best = 6)
+plot(pr.pccl)
+text(pr.pccl)
+table(predict(pr.pccl,poke,type="class"),poke$isLegendary)
+```
+
+As predicted, six terminal nodes on the classification tree predict as well as ten.
+
+Let's try bagging and random forests on the tree
+
+```{r}
+library(randomForest)
+set.seed(1995)
+pcbag<-randomForest(poke$isLegendary~pc[,1]+pc[,2],mtry=2,importance=TRUE)
+pcbag
+varImpPlot(pcbag)
+```
+
+The bagged model performs worse, although because of the way the confusion matrix is calculated, it gives us a better idea at long run performance of the model (i.e. our cross-validated tree may be overfitting). Let's take a look at the random forest model.
+
+```{r}
+set.seed(1995)
+pcrf<-randomForest(poke$isLegendary~pc[,1]+pc[,2],mtry=1,importance=TRUE)
+pcrf
+varImpPlot(pcrf)
+```
+
+Very slightly better than bagging (which makes sense since we are only using two variables for classification). The variable importance plot gives almost no importance to PC2 for predicting isLegendary. Let's try classifying using only PC1 with some other models.
+
+
+```{r}
+library(MASS)
+leglda <- lda(factor(poke$isLegendary)~pc[,1])
+leglda
+table(predict(leglda,poke)$class,poke$isLegendary)
+```
+
+LDA with only PC1 as a predictor clearly does not perform as well as PC2. Let's try out logistic regression.
+
+```{r}
+pc1log <- glm(factor(poke$isLegendary) ~ pc[,1] , family="binomial")
+table(predict(pc1log, type="response") > .5, poke$isLegendary)
+```
+
+LogReg performs just as poorly as LDA. It seems that even though PC2 is not near as important as PC1 at predicting legendary status, it contains some crucial information that PC1 is missing.
+
 #Neural Networks
 
 <!--If there isLegendary stuff in here move it-->
