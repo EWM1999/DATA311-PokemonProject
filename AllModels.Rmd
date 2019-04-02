@@ -313,12 +313,40 @@ simlog<-glm(factor(poke.train$isLegendary)~poke.train$hasGender+poke.train$Total
 table(predict(simlog, type = "response")>0.5, poke.train$isLegendary)
 ```
 
+```{r}
+pokemon<-read.csv("pokemon_alopez247.csv")
+
+```
+
+Turning all data into numerics
+
+```{r}
+poke<-data.frame(pokemon)
+
+#remove unique identifiers
+poke<-poke[,-c(1,2)]
+```
+
+```{r}
+for(j in 1:ncol(poke)){
+  if(!is.numeric(poke[,j]) ){
+      poke[,j]<-(as.numeric(poke[,j]))
+  }
+}
+
+poke$isLegendary <- (poke$isLegendary - 1)
+poke$hasMegaEvolution <- (poke$hasMegaEvolution - 1)
+poke$hasGender <- (poke$hasGender - 1)
+```
+
+
 ## Logistic Regression
 
 ```{r}
 library(class)
 library(boot)
 library("gclus")
+
 # typeglm <- glm(poke.train$hasGender~poke.train$Type_1 + poke.train$Type_2, data=poke.train)
 # typeglm
 # predgend<- predict(typeglm, newdata = poke.test, type= "response")
@@ -340,7 +368,8 @@ This might be Type 1 error??? (probs nah tbh why would a legendary pokemon need 
 
 Leave One Out Cross Validation!
 ```{r}
-attach(poke2)
+
+attach(poke)
 pokeglm <- list()
 cv.mse <- NA
 for(i in 1:nrow(poke)){
@@ -352,8 +381,14 @@ for(i in 1:nrow(poke)){
   cv.mse[i] <- (predict(pokeglm[[i]], newdata = data.frame(poke$isLegendary[i])) - poke$isLegendary[i])^2
   
 }
+
 mean(cv.mse)
+
 ```
+
+MSE of 25.44115
+
+
 
 
 <!-- #KNN classification for isLegendary -->
@@ -421,7 +456,6 @@ poke2<-poke[,c(6:11,20:21)]
 pcapoke <- prcomp(as.matrix(poke2), scale=TRUE)
 summary(pcapoke)
 biplot(pcapoke)
-pc<-data.frame(pcapoke$x)
 ```
 
 Despite only accounting for 58% of the variance in the model, the Kaiser criterion would suggest keeping the first two principal components.
@@ -512,9 +546,6 @@ library(gclus)
 library(nnet)
 library(NeuralNetTools)
 set.seed(1995)
-train<-sample(1:721,505)
-trainset <- pokemon[train, ]
-testset <- pokemon[-train, ]
 spoke <- cbind(scale(trainset[,6:11]), factor(trainset$isLegendary))
 colnames(spoke)[7] <- "isLegendary"
 spoke<-data.frame(spoke)
@@ -535,6 +566,7 @@ table(spoketest$isLegendary, predict(nnpoke, newdata=spoketest, type="class"))
 ```
 
 ```{r}
+attach(data)
 trainsetg<-trainset[which(hasGender=='True'),]
 testsetg<-testset[which(hasGender=='True'),]
 trainsetg<-na.omit(trainsetg)
@@ -561,6 +593,12 @@ text(prunePokeG, pretty=0)
 
 
 ##Creating a subset with only pokemon that have a gender
+
+```{r}
+pokemon<-read.csv("pokemon_alopez247.csv")
+poke<-data.frame(pokemon)
+```
+
 
 ```{r}
 attach(poke)
@@ -882,7 +920,6 @@ Ok, now we're talking. So it looks like PC1 is correlated with the harder to cat
 
 Optimizing number of nodes in first layer
 ```{r}
-library(neuralnet)
 for(i in 1:5){
   nnmaletr <- neuralnet(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=c(i,3), threshold=0.01)
   print(paste("Number of hidden layer variables in first layer:", i))
