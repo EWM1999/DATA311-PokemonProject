@@ -246,7 +246,12 @@ knnLegend.pred<-knn(train.x,test.x,train.legend,k=5)
 table(knnLegend.pred,poke.test$isLegendary)
 ```
 
-Pretty great!
+Pretty great! Let's look at cross-validated error
+
+```{r}
+knnLegendCV<-knn.cv(cbind(HP,Attack,Defense,Sp_Atk,Sp_Def,Speed,Height_m,Weight_kg,Catch_Rate),pokemon$isLegendary,k=5,p=1)#,method="classification")
+table(knnLegendCV,pokemon$isLegendary)
+```
 
 
 #Linear Discriminant Analysis 
