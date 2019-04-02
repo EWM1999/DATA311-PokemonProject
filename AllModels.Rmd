@@ -474,6 +474,7 @@ First, a simple tree
 
 ```{r}
 library(tree)
+pc<-data.frame(pcapoke$x)
 pccl<-tree(poke$isLegendary~pc[,1]+pc[,2])
 plot(pccl)
 text(pccl)
@@ -546,6 +547,9 @@ library(gclus)
 library(nnet)
 library(NeuralNetTools)
 set.seed(1995)
+train<-sample(1:721,505)
+trainset<-poke[train,]
+testset<-poke[-train,]
 spoke <- cbind(scale(trainset[,6:11]), factor(trainset$isLegendary))
 colnames(spoke)[7] <- "isLegendary"
 spoke<-data.frame(spoke)
@@ -566,7 +570,6 @@ table(spoketest$isLegendary, predict(nnpoke, newdata=spoketest, type="class"))
 ```
 
 ```{r}
-attach(data)
 trainsetg<-trainset[which(hasGender=='True'),]
 testsetg<-testset[which(hasGender=='True'),]
 trainsetg<-na.omit(trainsetg)
@@ -580,6 +583,8 @@ testsetg
 
 Let's see if there is a relationshp between Score and Pr_Male, a predictor for the probability of gender according to male
 ```{r}
+poke1<-pokemon[which(hasGender=='True'),]
+poke1
 set.seed(983457)
 pokeG<-tree(Pr_Male~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed + Total,data=poke1)
 plot(pokeG)
@@ -591,21 +596,6 @@ plot(prunePokeG)
 text(prunePokeG, pretty=0)
 ```
 
-
-##Creating a subset with only pokemon that have a gender
-
-```{r}
-pokemon<-read.csv("pokemon_alopez247.csv")
-poke<-data.frame(pokemon)
-```
-
-
-```{r}
-attach(poke)
-poke1<-poke[which(hasGender==1),]
-head(poke1)
-length(poke1[,1])
-```
 
 ##Trees on the new data set
 
@@ -920,6 +910,7 @@ Ok, now we're talking. So it looks like PC1 is correlated with the harder to cat
 
 Optimizing number of nodes in first layer
 ```{r}
+library(neuralnet)
 for(i in 1:5){
   nnmaletr <- neuralnet(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=c(i,3), threshold=0.01)
   print(paste("Number of hidden layer variables in first layer:", i))
@@ -976,6 +967,7 @@ MSE with Pr_Male included, 5 nodes 1 hidden
 spoketest <- cbind(scale(testsetg[,6:11]), factor(testsetg$Generation))
 colnames(spoketest)[7] <- "Generation"
 spoketest<-data.frame(spoketest)
+length(poke1$isLegendary)
 table(spoketest$isLegendary, predict(nnGen, newdata=spoketest, type="class"))
 ```
 
