@@ -140,6 +140,36 @@ type<-ggplot(pokemon, aes(pokemon$Type_1, fill = pokemon$Type_1)) + geom_histogr
 type
 ```
 
+##Plot on Pr_Male over Generations
+
+```{r}
+poke<-data.frame(pokemon)
+```
+
+```{r}
+library(ggplot2)
+
+pokedat<-poke[which(poke$hasGender=='True'),]
+pokedat <- pokedat[,c(12,16)]
+
+ggplot(pokedat)+
+  geom_point(aes(pokedat$Generation, pokedat$Pr_Male))
+
+
+library(plyr)
+mu <- ddply(pokedat, "Generation", summarise, grp.mean=mean(Pr_Male))
+head(mu)
+
+
+
+colors = c("1","2","3","4","5","6")
+
+ggplot(pokedat, aes(x=pokedat$Pr_Male, group=pokedat$Generation, fill=colors[Generation]))+
+  geom_histogram(position="dodge",binwidth=0.25)+theme_bw()
+
+```
+
+
 #isLegendary Analyses
 
 Let's see if we can predict if a Pokemon is legendary using the Total predictor. In using the predictor Total, we are under the assumption that legendary Pokemon have high totals. From looking at the data set this appears to be true. It also appears from the data set that legendary Pokemon do not have a gender except for a couple outliers. Let's see if this is the case,
@@ -181,6 +211,47 @@ predicted<-predict(linmod, newdata=poke.test)
 mean(linmod$residuals^2)
 mean((poke.test$Total-predicted)^2)
 ```
+
+#Boosting
+```{r}
+poke <- data.frame(pokemon)
+poke$isLegendary<-(as.integer(factor(poke$isLegendary))-1)
+poke<-poke[,-c(1,2)]
+
+set.seed(1995)
+train<-sample(1:nrow(poke),432)
+poke.test<-poke[-train,]
+poke.train<-poke[train,]
+
+library(glmnet)
+ library(gbm)
+ library(gclus)
+```
+
+## Boosting
+
+Let's try using boosting on the pokemon data to predict if Legendary
+```{r}
+
+ set.seed(54390)
+ pboost <- gbm(isLegendary~., distribution="bernoulli", data=poke, n.trees=5000, interaction.depth=1)
+ table(poke$isLegendary, predict(pboost, newdata=poke, type="response", n.trees=5000)>0.5 )
+ summary(pboost)
+```
+
+
+Splitting the data up into training and testing data....
+```{r}
+set.seed(54390)
+pboost <- gbm(isLegendary~., distribution="bernoulli", data=poke.train, n.trees=5000, interaction.depth=1)
+table(poke.test$isLegendary, predict(pboost, newdata=poke.test, type="response", n.trees=5000)>0.5 )
+summary(pboost)
+```
+
+4 misclassifications... 
+Looks like Total, Catch_Rate, Egg_Group1_1, and Pr_Male are the 4 most important variables in decreasing order.
+it's interesting how hasGender is the second least important variable....
+
 
 #Regression Tree, Total as response and HP, Attack, Defense, Sp_Atk, Sp_Def, and Speed as predictors
 ```{r}
@@ -282,17 +353,26 @@ poke.train<-poke[train,]
 poke.test<-poke[-train,]
 ```
 
-##LDA 2
+##LDA 3
+```{r}
+pokemon<-read.csv("pokemon_alopez247.csv")
+poke <- data.frame(pokemon, stringsAsFactors = TRUE)
+poke[is.na(poke)] <- 0
+poke$isLegendary<-(as.integer(factor(poke$isLegendary))-1)
+poke$hasGender<-(as.integer(factor(poke$hasGender))-1)
+poke<-poke[,-c(1,2)]
+
+set.seed(1995)
+train<-sample(1:nrow(poke),432)
+poke.train<-poke[train,]
+poke.test<-poke[-train,]
+```
+
 ```{r}
 #install.packages(MASS)
 library(MASS)
-pkmlda<- lda(poke$hasMegaEvolution~poke$hasGender+poke$Type_1+poke$Total+poke$Generation+poke$Pr_Male+poke$isLegendary, data=poke, CV=TRUE)
-table(poke$hasMegaEvolution, pkmlda$class)
 ```
-```{r}
-pkmlda<- lda(poke$isLegendary~poke$hasMegaEvolution+poke$Total+poke$hasGender+poke$Pr_Male, data=poke, CV=TRUE)
-table(poke$hasMegaEvolution, pkmlda$class)
-```
+
 ```{r}
 pkmlda<- lda(poke$isLegendary~poke$hasGender+poke$Pr_Male, data=poke, CV=TRUE)
 table(poke$isLegendary, pkmlda$class)
@@ -302,6 +382,11 @@ table(poke$isLegendary, pkmlda$class)
 pkmlda<- lda(poke$isLegendary~poke$Type_1+poke$Type_2, data=poke, CV=TRUE)
 table(poke$isLegendary, pkmlda$class)
 ```
+
+```{r}
+poke<-data.frame(pokemon)
+```
+
 
 #QDA
 ```{r}
@@ -579,6 +664,451 @@ testsetg
 ```
 
 
+```{r}
+pokemon<-read.csv("pokemon_alopez247.csv")
+```
+
+##LASSO
+
+Let's try using LASSO to remove predictors from the linear model
+
+```{r}
+library(glmnet)
+set.seed(53342)
+pkmn<-data.frame(pokemon, stringsAsFactors = TRUE)
+pkmn[is.na(pkmn)] <- 0
+x <- data.matrix(pkmn)[,-13]
+y <- as.integer(as.logical(pkmn$isLegendary))
+grid<-exp(seq(-1.5,-8.25,length=100))
+lassomod<-cv.glmnet(x,y, family = "binomial", alpha=1, lambda = grid)
+plot(lassomod)
+plot(lassomod$glmnet.fit, label=TRUE, xvar="lambda")
+lammin <- lassomod$lambda.min
+lam1se <- lassomod$lambda.1se
+lasimmin <- glmnet(x,y,alpha = 1, lambda=lammin)
+lasim1se <- glmnet(x,y,alpha = 1, lambda=lam1se)
+#coef(lasimmin)
+#coef(lasim1se)
+```
+
+Overall, the most important predictor is hasGender. This is not surprising and matches the rest of the analysis.
+However, it is interesting and worth point out that after Pr_Male is removed, it becomes a more more promenent predictor. This is because Pr_Male is in many ways repeat data from hasGender. Any pokemon without a gernder has no probablity of being male. 
+
+```{r}
+pkmn<-data.frame(pokemon, stringsAsFactors = TRUE)
+x <- data.matrix(pkmn)[,-c(15, 16)]
+y <- as.integer(as.logical(pkmn$hasGender))
+grid<-exp(seq(-2,-9,length=200))
+lassomod<-cv.glmnet(x,y, family = "binomial", alpha=1, lambda = grid)
+plot(lassomod)
+plot(lassomod$glmnet.fit, label=TRUE, xvar="lambda")
+lammin <- lassomod$lambda.min
+lam1se <- lassomod$lambda.1se
+lasimmin <- glmnet(x,y,alpha = 1, lambda=lammin)
+lasim1se <- glmnet(x,y,alpha = 1, lambda=lam1se)
+
+```
+Removed $pokemon\$Pr\_Male$ bc is dependent on $pokemon\$hasGender$ and minimum was $\lim(LogLambda->-infinity)$.
+```{r}
+coef(lasimmin)
+```
+```{r}
+coef(lasim1se)
+```
+Looks like $pokemon\$isLegendary$ is the most important variable...
+```{r}
+poke0<-data.frame(pokemon)
+poke1<-poke0[which(poke0$hasGender=='True'),]
+x <- data.matrix(poke1)[,-16]
+y <- poke1$Pr_Male
+grid<-exp(seq(-3,-8.5,length=150))
+lassomod<-cv.glmnet(x,y, alpha=1, lambda = grid)
+plot(lassomod)
+plot(lassomod$glmnet.fit, label=TRUE, xvar="lambda")
+lammin <- lassomod$lambda.min
+lam1se <- lassomod$lambda.1se
+lasimmin <- glmnet(x,y,alpha = 1, lambda=lammin)
+lasim1se <- glmnet(x,y,alpha = 1, lambda=lam1se)
+```
+```{r}
+coef(lasimmin)
+```
+```{r}
+coef(lasim1se)
+```
+One thing to note is that this appears to have a large standard deviation.... The true minimum is at 19 variables but one standard deviation from that gives 8 variables.
+
+
+
+####Fitting interactions
+Reference:
+https://strakaps.github.io/post/glinternet/
+
+```{r}
+#install.packages("glinternet")
+library("glinternet")
+```
+
+```{r}
+library(dplyr)
+
+poke <- data.frame(pokemon)
+
+y <- as.integer(as.logical(poke$isLegendary))
+
+#1,2 are unique and not useful
+poke <- poke[, -c(1,2, 13)]
+
+
+# impute the median for the continuous variables
+i_num <- sapply(poke, is.numeric)
+poke[, i_num] <- apply(poke[, i_num], 2, function(x) ifelse(is.na(x), median(x, na.rm=T), x))
+
+# impute empty categories
+poke[, !i_num] <- apply(poke[, !i_num], 2, function(x) {
+  x[x==""] <- "empty"
+  x[is.na(x)] <- "missing"
+  x
+})
+
+# get the numLevels vector containing the number of categories
+X <- poke
+X[, !i_num] <- apply(X[, !i_num], 2, factor) %>% as.data.frame()
+numLevels <- X %>% sapply(nlevels)
+numLevels[numLevels==0] <- 1
+
+
+# make the categorical variables take integer values starting from 0
+X[, !i_num] <- apply(X[, !i_num], 2, function(col) as.integer(as.factor(col)) - 1)
+##R is such a WEIRD language
+#ike i guess its better than spending all day debugging in python and your problem is a double whitespace
+#but this is weird
+```
+
+
+```{r}
+cv_fit <- glinternet.cv(X, y, numLevels)
+plot(cv_fit)
+```
+
+```{r}
+i_1Std <- which(cv_fit$lambdaHat1Std == cv_fit$lambda)
+coefs <- coef(cv_fit$glinternetFit)[[i_1Std]]
+coefs
+```
+
+####Main Effects (part without interactions)
+
+```{r}
+coefs$mainEffects
+
+idx_num <- (1:length(i_num))[i_num]
+idx_cat <- (1:length(i_num))[!i_num]
+names(numLevels)[idx_cat[coefs$mainEffects$cat]]
+names(numLevels)[idx_num[coefs$mainEffects$cont]]
+
+coefs$mainEffectsCoef
+```
+
+Main Effects are Total, Sp_Atk, Sp_Def, and Weight
+
+####Interactions
+```{r}
+coefs$interactions
+```
+
+The $catcat tells us that there is no interaction between the categorical variables
+
+Three pairs of continuous variables have interactions:  
+$(1,5)$, $(1,6)$, and $(1,11)$
+Total interacts with Sp_Atk, Sp_Def, and (i counted catch rate but i think ti should be weight?), which is interesting.
+
+```{r}
+coefs$interactionsCoef$contcont
+```
+
+There is one interaction between categorical and continuous variables:
+Sp_Atk and Type_1
+```{r}
+coefs$interactionsCoef$catcont
+
+```
+
+####MSE
+```{r}
+sqrt(cv_fit$cvErr[[i_1Std]])
+
+```
+MSE of 0.09163895
+
+
+##LASSO with interactions with hasGender Removed on Total
+
+```{r}
+#install.packages("glinternet")
+library("glinternet")
+library(dplyr)
+
+```
+
+```{r}
+poke <- data.frame(pokemon)
+
+poke<-poke[which(poke$hasGender=='True'),]
+
+y <- as.integer(poke$Total)
+
+
+#1,2 are unique and not useful
+#removed hasGender
+#using total as response
+poke <- poke[, -c(1,2, 5, 15)]
+
+poke
+
+# impute the median for the continuous variables
+i_num <- sapply(poke, is.numeric)
+poke[, i_num] <- apply(poke[, i_num], 2, function(x) ifelse(is.na(x), median(x, na.rm=T), x))
+
+# impute empty categories
+poke[, !i_num] <- apply(poke[, !i_num], 2, function(x) {
+  x[x==""] <- "empty"
+  x[is.na(x)] <- "missing"
+  x
+})
+
+# get the numLevels vector containing the number of categories
+X <- poke
+X[, !i_num] <- apply(X[, !i_num], 2, factor) %>% as.data.frame()
+numLevels <- X %>% sapply(nlevels)
+numLevels[numLevels==0] <- 1
+
+
+# make the categorical variables take integer values starting from 0
+X[, !i_num] <- apply(X[, !i_num], 2, function(col) as.integer(as.factor(col)) - 1)
+##R is such a WEIRD language
+#ike i guess its better than spending all day debugging in python and your problem is a double whitespace
+#but this is weird
+```
+
+
+```{r}
+cv_fit <- glinternet.cv(X, y, numLevels)
+#plot(cv_fit)
+```
+
+```{r}
+i_1Std <- which(cv_fit$lambdaHat1Std == cv_fit$lambda)
+coefs <- coef(cv_fit$glinternetFit)[[i_1Std]]
+coefs
+```
+
+####Main Effects (part without interactions)
+
+```{r}
+coefs$mainEffects
+
+idx_num <- (1:length(i_num))[i_num]
+idx_cat <- (1:length(i_num))[!i_num]
+names(numLevels)[idx_cat[coefs$mainEffects$cat]]
+names(numLevels)[idx_num[coefs$mainEffects$cont]]
+
+coefs$mainEffectsCoef
+```
+
+Main Effects are "HP", "Attack", "Defense", "Sp_Atk", "Sp_Def", "Speed", and "Catch_Rate"
+
+####Interactions
+```{r}
+coefs$interactions
+```
+
+There are no significant interactions
+
+####MSE
+```{r}
+sqrt(cv_fit$cvErr[[i_1Std]])
+
+```
+MSE of 0.812088
+
+
+##LASSO with interactions with hasGender Removed on isLegendary
+
+```{r}
+poke <- data.frame(pokemon)
+
+poke<-poke[which(poke$hasGender=='True'),]
+
+y <- as.integer(poke$isLegendary)
+
+
+#1,2 are unique and not useful
+#removed hasGender
+#using islegendary as response
+poke <- poke[, -c(1,2, 13, 15)]
+
+poke
+
+# impute the median for the continuous variables
+i_num <- sapply(poke, is.numeric)
+poke[, i_num] <- apply(poke[, i_num], 2, function(x) ifelse(is.na(x), median(x, na.rm=T), x))
+
+# impute empty categories
+poke[, !i_num] <- apply(poke[, !i_num], 2, function(x) {
+  x[x==""] <- "empty"
+  x[is.na(x)] <- "missing"
+  x
+})
+
+# get the numLevels vector containing the number of categories
+X <- poke
+X[, !i_num] <- apply(X[, !i_num], 2, factor) %>% as.data.frame()
+numLevels <- X %>% sapply(nlevels)
+numLevels[numLevels==0] <- 1
+
+
+# make the categorical variables take integer values starting from 0
+X[, !i_num] <- apply(X[, !i_num], 2, function(col) as.integer(as.factor(col)) - 1)
+##R is such a WEIRD language
+#ike i guess its better than spending all day debugging in python and your problem is a double whitespace
+#but this is weird
+```
+
+
+```{r}
+cv_fit <- glinternet.cv(X, y, numLevels)
+plot(cv_fit)
+```
+
+```{r}
+i_1Std <- which(cv_fit$lambdaHat1Std == cv_fit$lambda)
+coefs <- coef(cv_fit$glinternetFit)[[i_1Std]]
+coefs
+```
+
+####Main Effects (part without interactions)
+
+```{r}
+coefs$mainEffects
+
+idx_num <- (1:length(i_num))[i_num]
+idx_cat <- (1:length(i_num))[!i_num]
+names(numLevels)[idx_cat[coefs$mainEffects$cat]]
+names(numLevels)[idx_num[coefs$mainEffects$cont]]
+
+coefs$mainEffectsCoef
+```
+
+Main Effects are "HP", "Attack", "Defense", "Sp_Atk", "Sp_Def", "Speed", and"Catch_Rate"
+
+####Interactions
+```{r}
+coefs$interactions
+```
+Continuous interactions : Hp and Type_1
+mix: Sp_Atk and Egg_Group_1
+
+####MSE
+```{r}
+sqrt(cv_fit$cvErr[[i_1Std]])
+
+```
+
+MSE of 0.05
+
+##LASSO with interactions on Pr_Male
+
+```{r}
+#install.packages("glinternet")
+library("glinternet")
+library(dplyr)
+
+```
+
+```{r}
+poke <- data.frame(pokemon)
+
+poke<-poke[which(poke$hasGender=='True'),]
+
+y <- as.integer(poke$Pr_Male)
+
+
+#1,2 are unique and not useful
+#using prmale as response
+poke <- poke[, -c(1,2, 16)]
+
+poke
+
+# impute the median for the continuous variables
+i_num <- sapply(poke, is.numeric)
+poke[, i_num] <- apply(poke[, i_num], 2, function(x) ifelse(is.na(x), median(x, na.rm=T), x))
+
+# impute empty categories
+poke[, !i_num] <- apply(poke[, !i_num], 2, function(x) {
+  x[x==""] <- "empty"
+  x[is.na(x)] <- "missing"
+  x
+})
+
+# get the numLevels vector containing the number of categories
+X <- poke
+X[, !i_num] <- apply(X[, !i_num], 2, factor) %>% as.data.frame()
+numLevels <- X %>% sapply(nlevels)
+numLevels[numLevels==0] <- 1
+
+
+# make the categorical variables take integer values starting from 0
+X[, !i_num] <- apply(X[, !i_num], 2, function(col) as.integer(as.factor(col)) - 1)
+##R is such a WEIRD language
+#ike i guess its better than spending all day debugging in python and your problem is a double whitespace
+#but this is weird
+```
+
+
+```{r}
+cv_fit <- glinternet.cv(X, y, numLevels)
+#plot(cv_fit)
+```
+
+```{r}
+i_1Std <- which(cv_fit$lambdaHat1Std == cv_fit$lambda)
+coefs <- coef(cv_fit$glinternetFit)[[i_1Std]]
+```
+
+####Main Effects (part without interactions)
+
+```{r}
+coefs$mainEffects
+```
+
+```{r}
+idx_num <- (1:length(i_num))[i_num]
+idx_cat <- (1:length(i_num))[!i_num]
+names(numLevels)[idx_cat[coefs$mainEffects$cat]]
+names(numLevels)[idx_num[coefs$mainEffects$cont]]
+
+coefs$mainEffectsCoef
+```
+
+
+####Interactions
+```{r}
+coefs$interactions
+```
+
+
+####MSE
+```{r}
+sqrt(cv_fit$cvErr[[i_1Std]])
+
+```
+MSE of 0.812088
+
+
+
+
+
 #Gender Analyses
 
 Let's see if there is a relationshp between Score and Pr_Male, a predictor for the probability of gender according to male
@@ -690,6 +1220,98 @@ poke$isLegendary <- (poke$isLegendary - 1)
 poke$hasMegaEvolution <- (poke$hasMegaEvolution - 1)
 poke$hasGender <- (poke$hasGender - 1)
 ```
+
+##KNN
+
+```{r}
+poke<-data.frame(pokemon)
+
+#remove unique identifiers
+poke<-poke[,-c(1,2)]
+```
+
+Note that KNN requires numerics, not factors. first we must remove them
+
+```{r}
+#the new dataset poke2 has all na values fr Pr_Male removed
+poke2<-poke[which(hasGender=='True'),]
+poke2
+```
+
+
+```{r}
+for(j in 1:ncol(poke2)){
+  if(!is.numeric(poke2[,j]) ){
+      poke2[,j]<-(as.numeric(poke2[,j]))
+  }
+}
+
+poke2$isLegendary <- (poke2$isLegendary - 1)
+poke2$hasMegaEvolution <- (poke2$hasMegaEvolution - 1)
+poke2$hasGender <- (poke2$hasGender - 1)
+```
+
+on to the regression!
+
+```{r}
+library(ggplot2)
+library(FNN)
+poke3<-data.frame(poke2[,-c(2, 14, 16)])
+plot(poke2$Pr_Male, type ="p")
+knnr20 <- knn.reg(poke2[,-c(2, 14, 16)], y=poke2$Pr_Male, k = 20)
+lines(knnr20$pred, col="green", lwd=1)
+```
+knnreg by default returns cross validated results
+```{r}
+knnr20$R2Pred
+knnr20$PRESS
+```
+
+```{r}
+mse<-NA
+for(i in 1:nrow(poke2)){
+  mse[i]<- (poke2$Pr_Male[i] - knnr20$pred[i])^2
+}
+mean(mse)
+```
+
+
+```{r}
+poke4<-poke[which(hasGender=='True'),]
+poke4<-data.frame(poke4[-c(2,14,16)])
+
+name<-list("Type_1", "Total", "HP", "Attack", "Defense", "Sp_Atk", "Sp_Def", "Speed", "Generation", "isLegendary", "Colour", "hasGender", "Egg_Group_1", "hasMegaEvolution", "Height_m", "Weight_kg", "Catch_Rate", "Body_Style")
+
+
+for(j in 1:ncol(poke3)){
+  plot(poke2$Pr_Male~poke4[,j], xlab = name[j])
+  lines(knnr20$pred, col="green", lwd=1)
+}
+
+```
+Using k = 30
+```{r}
+library(ggplot2)
+library(FNN)
+poke3<-data.frame(poke2[,-c(2, 14, 16)])
+plot(poke2$Pr_Male, type ="p")
+knnr30 <- knn.reg(poke2[,-c(2, 14, 16)], y=poke2$Pr_Male, k = 30)
+lines(knnr30$pred, col="blueviolet", lwd=1)
+```
+
+```{r}
+knnr30$R2Pred
+knnr30$PRESS
+```
+
+```{r}
+mse<-NA
+for(i in 1:nrow(poke2)){
+  mse[i]<- (poke2$Pr_Male[i] - knnr30$pred[i])^2
+}
+mean(mse)
+```
+looks like it works better than k=20
 
 
 #Graph with Pr_Male
