@@ -40,7 +40,6 @@ clusComplete<-hclust(eucdist, method = "complete")
 clusComplete2<-hclust(mandist, method = "complete")
 plot(clusComplete)
 plot(clusComplete2)
-
 mancom <- cutree(clusComplete2, 2)
 euccom<-cutree(clusComplete, 2)
 manavg <- cutree(clusPokemonAvg2, 2)
@@ -323,14 +322,12 @@ table(predict(simlog, type = "response")>0.5, poke.train$isLegendary)
 
 ```{r}
 pokemon<-read.csv("pokemon_alopez247.csv")
-
 ```
 
 Turning all data into numerics
 
 ```{r}
 poke<-data.frame(pokemon)
-
 #remove unique identifiers
 poke<-poke[,-c(1,2)]
 ```
@@ -341,7 +338,6 @@ for(j in 1:ncol(poke)){
       poke[,j]<-(as.numeric(poke[,j]))
   }
 }
-
 poke$isLegendary <- (poke$isLegendary - 1)
 poke$hasMegaEvolution <- (poke$hasMegaEvolution - 1)
 poke$hasGender <- (poke$hasGender - 1)
@@ -354,7 +350,6 @@ poke$hasGender <- (poke$hasGender - 1)
 library(class)
 library(boot)
 library("gclus")
-
 # typeglm <- glm(poke.train$hasGender~poke.train$Type_1 + poke.train$Type_2, data=poke.train)
 # typeglm
 # predgend<- predict(typeglm, newdata = poke.test, type= "response")
@@ -376,7 +371,6 @@ This might be Type 1 error??? (probs nah tbh why would a legendary pokemon need 
 
 Leave One Out Cross Validation!
 ```{r warning=FALSE}
-
 attach(poke)
 pokeglm <- list()
 cv.mse <- NA
@@ -389,9 +383,7 @@ for(i in 1:nrow(poke)){
   cv.mse[i] <- (predict(pokeglm[[i]], newdata = data.frame(poke$isLegendary[i])) - poke$isLegendary[i])^2
   
 }
-
 mean(cv.mse)
-
 ```
 
 MSE of 25.44115
@@ -430,7 +422,6 @@ summary(TheMan)
 plot(TheMan)
 maxTotalL<-order(TheMan$Legends, decreasing = TRUE)
 head(TheMan[maxTotalL,])
-
 #Of Type 2
 TheMyth<-as.data.frame(table(pokeLegend$Type_2))
 colnames(TheMyth)<-c("Type 2", "Legends")
@@ -730,7 +721,6 @@ vect
 library(wesanderson)
 sp<-ggplot(poke1, aes(poke1$Pr_Male, fill = poke1$Pr_Male)) + geom_histogram(stat="count", color = "black", fill = wes_palette("FantasticFox1", 7, type = "continuous")) 
 sp
-
 ```
 
 <!-- See what a regression tree looks like using total as the predictor and hp, attack, defense, sp_atk, sp_def, and speed as predictors. -->
@@ -915,11 +905,10 @@ abline(linmod)
 Ok, now we're talking. So it looks like PC1 is correlated with the harder to catch Pokemon rather than the legendary ones. Probably a good time to start a new file, this is getting messy...
 
 
-#Neural Net predicting Pr_Male
-
+##Neural Net predicting Pr_Male
 Optimizing number of nodes in first layer
 ```{r}
-library(neuralnet)
+set.seed(873625)
 for(i in 1:5){
   nnmaletr <- neuralnet(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=c(i,3), threshold=0.01)
   print(paste("Number of hidden layer variables in first layer:", i))
@@ -929,6 +918,7 @@ for(i in 1:5){
 
 Optimizing number of nodes in second layer
 ```{r}
+set.seed(583726)
 for(i in 1:5){
   nnmaletr <- neuralnet(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=c(4,i), threshold=0.01)
   print(paste("Number of hidden layer variables in second layer:", i))
@@ -943,9 +933,6 @@ plotnet(nnmale)
 mse<-mean((compute(nnmale, testsetg[,6:11])$net.result-testsetg$Pr_Male)^2)
 mse
 ```
-MSE with 2 hidden layers and 4 and 3 nodes: 0.04011755
-MSE with 1 hidden layer and 3 nodes: 0.03988659
-
 
 ```{r}
 linmod<-lm(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg)
@@ -953,31 +940,109 @@ mean((predict(linmod,newdata=testsetg)-testsetg$Pr_Male)^2)
 ```
 This is pretty close to our neural net modeled above when we use 1 hidden layer and 3 nodes. 
 
-#Neural Net, predicting Generation
+##Neural net predicting hasGender
 ```{r}
-set.seed(12345)
-library(neuralnet)
-nnGen <- neuralnet(Generation ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=4, threshold=0.01)
-plotnet(nnGen)
+library(gclus)
+library(nnet)
+library(NeuralNetTools)
+set.seed(1995)
+gpoke <- cbind(scale(trainset[,c(6:11, 20:22)]), factor(trainset$hasGender))
+colnames(gpoke)[10] <- "hasGender"
+gpoke<-data.frame(gpoke)
+nngend <- nnet(factor(hasGender)~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed + Catch_Rate + Height_m + Weight_kg, data=gpoke, size=5)
+plotnet(nngend)
+table(trainset$hasGender, predict(nngend, type="class"))
 ```
+It appears that our neural net is effective in predicting hasGender, and also easy to generate an overfitted model for. 
+1 hidden layer with 11 nodes appears to overfit the model, 
+         1   2
+  False 45   0
+  True    0 460
+  
+Instead 1 hidden layer with 5 nodes appears to have a reasonable misclassification without totally overfitting. Let's try this on gspoketest,
 
 ```{r}
-mse<-mean((compute(nnGen, testsetg[,6:11])$net.result-testsetg$Generation)^2)
+gpoketest <- cbind(scale(trainset[,c(6:11, 20:22)]), factor(testset$hasGender))
+colnames(gpoketest)[10] <- "hasGender"
+gpoketest<-data.frame(gpoketest)
+table(gpoketest$hasGender, predict(nngend, newdata=gpoketest, type="class"))
+```
+
+It appears then that the optimal amount of nodes for our neural network is equal to 5 within 1 hidden layer. We can see that our misclassification for our gpoketest is relatively okay, and appears to be the best balance when we tune our network to 5 nodes. 
+
+##Neural net predicting Generation
+```{r}
+library(gclus)
+library(nnet)
+library(neuralnet)
+library(NeuralNetTools)
+set.seed(19127395)
+#nnGeneration <- neuralnet(Generation ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed + Pr_Male,data=trainsetg, hidden=5, threshold=0.01)
+nnGeneration <- neuralnet(Generation ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=5, threshold=0.01)
+plotnet(nnGeneration)
+mse<-mean((compute(nnGeneration, testsetg[,6:11])$net.result-testsetg$Generation)^2)
 mse
 ```
-MSE without Pr_Male, 2 hidden 4 and 3 nodes
-1.28986
-MSE without Pr_Male included, 5 nodes 1 hidden
-1.349612
-MSE with Pr_Male included, 5 nodes 1 hidden
-1.466631
+
+Optimizing number of nodes in first layer
+```{r}
+for(i in 1:5){
+  nnmaletr <- neuralnet(Generation ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=3, threshold=0.01)
+  print(paste("Number of hidden layer variables in first layer:", i))
+  print(paste("MSE: ", mean((compute(nnmaletr, testsetg[,6:11])$net.result-testsetg$Pr_Male)^2)))
+}
+```
 
 ```{r}
+linmod<-lm(Generation ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg)
+mean((predict(linmod,newdata=testsetg)-testsetg$Generation)^2)
+```
+
+#Mixture Modeling
+Predictors 6-10 (Attack, Defense, Sp_Atk, Sp_Def) used in generating clPairs and mclust
+```{r}
+library(mclust)
+clPairs(pokemon[c(6:10, 20:21)], cl = pokemon$Total)
+clp <- clPairs(pokemon[c(6:8, 20:21)], cl = pokemon$Total, lower.panel = NULL)
+clPairsLegend(0.1, 0.4, class = clp$class, 
+              col = clp$col, pch = clp$pch, 
+              title = "Pokemon Type_1")
+```
+
+These do not appear to help all too much, let's try using the teigen and mclust functions,
+
+#mclust without scaling
+```{r}
+library(teigen)
+library(mclust)
+pokeMix <- teigen(pokemon[,c(6:10, 20:21)], Gs=1:5, model="UCCU", scale=FALSE, verbose=FALSE)
+plot(pokeMix, xmarg=1, what="contour")
+plot(pokeMix, xmarg=1, what="uncertainty")
+mrun <- Mclust(pokemon[,c(6:10, 20:21)], G=1:5) 
+t(mrun$BIC)
+```
+
+Based on the BIC criterion on the unscaled mclust, we see that there are 4-5 suggested groups, primairly suggestsing 5 groups within the VVV model. Our marginal and uncertainty plot on the otherhand report 4 groups, with what appears a significant amount of uncertainty of group membership. When the data is scaled, we do appear to get 5 groups of the VVV model as above. 
+
+##Scaled mclust 
+```{r}
+library(mclust)
+mruns <- Mclust(scale(pokemon[c(6:10, 20:21)]), G=1:5) 
+#mruns <- Mclust(scale(pokemon[c(6:10, 20:21)]), G=1:5) 
+#Fitted with weight and height predictors
+t(mruns$BIC)
+```
+
+It may be reasonable to suggest that using mclust on the Pokemon data set may not be a sufficient model for the data, as it contains a large amount of categorical data. While KNN testing suggested 5 potential groups, the model used categorical data. It may be that the Pokemon dataset contains such a large diversity of typing, that mclust cannot accurately predict group membership since the dataset does not subscribe to such membership in the first place. At least not in such a way where group membership can be determined by Pokemon stats such as HP, Attack, Defense, Weight_kg, or Height_m. 
+5 groups may be than considered an inaccurate representation of the Pokemon dataset. 
+
+```{r}
+mrun5 <- Mclust(pokemon[c(6:8, 20:21)], 5)
+#table(pokemon$Egg_Group_1, mrun5$classification)
+adjustedRandIndex(pokemon$Egg_Group_1, mrun5$classification)
 spoketest <- cbind(scale(testsetg[,6:11]), factor(testsetg$Generation))
 colnames(spoketest)[7] <- "Generation"
 spoketest<-data.frame(spoketest)
 length(poke1$isLegendary)
 table(spoketest$isLegendary, predict(nnGen, newdata=spoketest, type="class"))
 ```
-
-
