@@ -1,6 +1,6 @@
 ---
 title: "DATA 311, All models"
-author: "Barret Jackson, Emily Medema, Kat Lecha, Lauren St. Clair"
+author: "Barret Jackson, Emily Medema, Kathryn Lecha, Lauren St. Clair"
 date: "March 30th, 2019"
 output: pdf_document
 ---
