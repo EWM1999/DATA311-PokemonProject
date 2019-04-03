@@ -140,35 +140,6 @@ type<-ggplot(pokemon, aes(pokemon$Type_1, fill = pokemon$Type_1)) + geom_histogr
 type
 ```
 
-##Plot on Pr_Male over Generations
-
-```{r}
-poke<-data.frame(pokemon)
-```
-
-```{r}
-library(ggplot2)
-
-pokedat<-poke[which(poke$hasGender=='True'),]
-pokedat <- pokedat[,c(12,16)]
-
-ggplot(pokedat)+
-  geom_point(aes(pokedat$Generation, pokedat$Pr_Male))
-
-
-library(plyr)
-mu <- ddply(pokedat, "Generation", summarise, grp.mean=mean(Pr_Male))
-head(mu)
-
-
-
-colors = c("1","2","3","4","5","6")
-
-ggplot(pokedat, aes(x=pokedat$Pr_Male, group=pokedat$Generation, fill=colors[Generation]))+
-  geom_histogram(position="dodge",binwidth=0.25)+theme_bw()
-
-```
-
 
 #isLegendary Analyses
 
@@ -1344,7 +1315,34 @@ library(wesanderson)
 sp<-ggplot(poke1, aes(poke1$Pr_Male, fill = poke1$Pr_Male)) + geom_histogram(stat="count", color = "black", fill = wes_palette("FantasticFox1", 7, type = "continuous")) 
 sp
 ```
+##Plot on Pr_Male over Generations
 
+```{r}
+poke<-data.frame(pokemon)
+```
+
+```{r}
+library(ggplot2)
+
+pokedat<-poke[which(poke$hasGender=='True'),]
+pokedat <- pokedat[,c(12,16)]
+
+ggplot(pokedat)+
+  geom_point(aes(pokedat$Generation, pokedat$Pr_Male))
+
+
+library(plyr)
+mu <- ddply(pokedat, "Generation", summarise, grp.mean=mean(Pr_Male))
+head(mu)
+
+
+
+colors = c("1","2","3","4","5","6")
+
+ggplot(pokedat, aes(x=pokedat$Pr_Male, group=pokedat$Generation, fill=colors[Generation]))+
+  geom_histogram(position="dodge",binwidth=0.25)+theme_bw()
+
+```
 <!-- See what a regression tree looks like using total as the predictor and hp, attack, defense, sp_atk, sp_def, and speed as predictors. -->
 <!-- ```{r} -->
 <!-- pokemon<-read.csv("pokemon_alopez247.csv") -->
