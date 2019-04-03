@@ -206,8 +206,24 @@ KNN classification
 
 ```{r}
 library(class)
-knnrun<-knn.cv(pokeDist, cl = poke.train$isLegendary, k = 5, prob = TRUE)
-table(poke.train$isLegendary, knnrun)
+# dim(na.omit(data.frame(poke.train)))
+# dim(factor(poke.train[,13]))
+# knnrun<-knn.cv(na.omit(data.frame(poke.train)), cl = factor(poke.train[,13]), k = 5, prob = TRUE)
+# table(poke.train$isLegendary, knnrun)
+set.seed(1995)
+train<-sample(1:nrow(pokemon),432)
+poke.test<-pokemon[-train,]
+poke.train<-pokemon[train,]
+dim(poke.train)
+poke.trainNum<-factor(poke.train)
+poke.trainNum<-as.numeric(poke.trainNum)
+poke.train<-data.frame((poke.trainNum))
+dim(poke.train)
+length(poke.train$isLegendary)
+
+library(class)
+knnrun<-knn.cv(poke.trainNum, cl = poke.train$isLegendary, k = 5, prob = TRUE)
+table(poke.trainNum$isLegendary, knnrun)
 ```
 
 

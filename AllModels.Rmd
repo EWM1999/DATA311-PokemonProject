@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 pokemon<-read.csv("pokemon_alopez247.csv")
+summary(pokemon)
 ```
 
 
@@ -224,26 +225,25 @@ pokeRF2
 ```
 
  
-<!-- #KNN Classification -->
-<!-- ```{r} -->
-<!-- set.seed(1995) -->
-<!-- train<-sample(1:nrow(pokemon),432) -->
-<!-- poke.test<-pokemon[-train,] -->
-<!-- poke.train<-pokemon[train,] -->
-<!-- poke.trainNum<-factor(poke.train) -->
-<!-- poke.trainNum<-as.numeric(poke.trainNum) -->
-<!-- poke.train<-data.frame((poke.trainNum)) -->
-<!-- dim(poke.trainNum) -->
-<!-- length(poke.train$isLegendaryNum) -->
-
-<!-- library(class) -->
-<!-- knnrun<-knn.cv(poke.trainNum, cl = poke.trainNum$isLegendary, k = 5, prob = TRUE) -->
-<!-- table(poke.trainNum$isLegendary, knnrun) -->
-
-<!-- library(class) -->
-<!-- knnrun<-knn.cv(pokeDist, cl = poke.train$isLegendary, k = 5, prob = TRUE) -->
-<!-- table(poke.train$isLegendary, knnrun) -->
-<!-- ``` -->
+#KNN Classification
+```{r}
+# set.seed(1995)
+# train<-sample(1:nrow(pokemon),432)
+# poke.test<-pokemon[-train,]
+# poke.train<-pokemon[train,]
+# pokeknn<-poke.train[,-13]
+# pokeknn<-data.frame(pokeknn)
+# 
+# library(class)
+# # knnrun<-knn.cv(poke.trainNum, cl = poke.trainNum$isLegendary, k = 5, prob = TRUE)
+# # table(poke.trainNum$isLegendary, knnrun)
+# 
+# knnrun<-knn(poke.train[, -13],poke.test[,-13],  cl = poke.train$isLegendary, k = 4, prob=TRUE)
+# table(poketrain$isLegendary, knnrun)
+# # <!-- library(class) -->
+# # <!-- knnrun<-knn.cv(pokeDist, cl = poke.train$isLegendary, k = 5, prob = TRUE) -->
+# # <!-- table(poke.train$isLegendary, knnrun) -->
+```
 
 
 #Linear Discriminant Analysis 
@@ -340,7 +340,7 @@ This might be Type 1 error??? (probs nah tbh why would a legendary pokemon need 
 
 Leave One Out Cross Validation!
 ```{r}
-attach(poke2)
+#attach(poke2)
 pokeglm <- list()
 cv.mse <- NA
 for(i in 1:nrow(poke)){
