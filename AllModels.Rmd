@@ -413,7 +413,8 @@ MSE of 25.44115
 library(wesanderson)
 #https://www.kaggle.com/excaliburzero/predicting-legendary-pokemon
 poke<-data.frame(pokemon)
-pokeLegend<-poke[which(isLegendary=='True'),]
+pokeLegend<-poke[which(poke$isLegendary=='True'),]
+pokeLegend
 plot(Generation~isLegendary)
 TheLegends<-as.data.frame(table(pokeLegend$Generation))
 colnames(TheLegends)<-c("Generation", "Legends")
