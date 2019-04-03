@@ -1,7 +1,7 @@
 ---
 title: "DATA 311, All models"
 author: "Barret Jackson, Emily Medema, Kathryn Lecha, Lauren St. Clair"
-date: "March 30th, 2019"
+date: "April 3rd, 2019"
 output: pdf_document
 ---
 
@@ -188,12 +188,10 @@ mean((poke.test$Total-predicted)^2)
 poke <- data.frame(pokemon)
 poke$isLegendary<-(as.integer(factor(poke$isLegendary))-1)
 poke<-poke[,-c(1,2)]
-
 set.seed(1995)
 train<-sample(1:nrow(poke),432)
 poke.test<-poke[-train,]
 poke.train<-poke[train,]
-
 library(glmnet)
  library(gbm)
  library(gclus)
@@ -203,7 +201,6 @@ library(glmnet)
 
 Let's try using boosting on the pokemon data to predict if Legendary
 ```{r}
-
  set.seed(54390)
  pboost <- gbm(isLegendary~., distribution="bernoulli", data=poke, n.trees=5000, interaction.depth=1)
  table(poke$isLegendary, predict(pboost, newdata=poke, type="response", n.trees=5000)>0.5 )
@@ -332,7 +329,6 @@ poke[is.na(poke)] <- 0
 poke$isLegendary<-(as.integer(factor(poke$isLegendary))-1)
 poke$hasGender<-(as.integer(factor(poke$hasGender))-1)
 poke<-poke[,-c(1,2)]
-
 set.seed(1995)
 train<-sample(1:nrow(poke),432)
 poke.train<-poke[train,]
@@ -602,6 +598,7 @@ LogReg performs just as poorly as LDA. It seems that even though PC2 is not near
 library(gclus)
 library(nnet)
 library(NeuralNetTools)
+pokemon<-read.csv("pokemon_alopez247.csv")
 set.seed(1995)
 train<-sample(1:721,505)
 trainset<-poke[train,]
@@ -632,11 +629,6 @@ trainsetg<-na.omit(trainsetg)
 trainsetg
 testsetg<-na.omit(testsetg)
 testsetg
-```
-
-
-```{r}
-pokemon<-read.csv("pokemon_alopez247.csv")
 ```
 
 ##LASSO
@@ -677,7 +669,6 @@ lammin <- lassomod$lambda.min
 lam1se <- lassomod$lambda.1se
 lasimmin <- glmnet(x,y,alpha = 1, lambda=lammin)
 lasim1se <- glmnet(x,y,alpha = 1, lambda=lam1se)
-
 ```
 Removed $pokemon\$Pr\_Male$ bc is dependent on $pokemon\$hasGender$ and minimum was $\lim(LogLambda->-infinity)$.
 ```{r}
@@ -722,33 +713,24 @@ library("glinternet")
 
 ```{r}
 library(dplyr)
-
 poke <- data.frame(pokemon)
-
 y <- as.integer(as.logical(poke$isLegendary))
-
 #1,2 are unique and not useful
 poke <- poke[, -c(1,2, 13)]
-
-
 # impute the median for the continuous variables
 i_num <- sapply(poke, is.numeric)
 poke[, i_num] <- apply(poke[, i_num], 2, function(x) ifelse(is.na(x), median(x, na.rm=T), x))
-
 # impute empty categories
 poke[, !i_num] <- apply(poke[, !i_num], 2, function(x) {
   x[x==""] <- "empty"
   x[is.na(x)] <- "missing"
   x
 })
-
 # get the numLevels vector containing the number of categories
 X <- poke
 X[, !i_num] <- apply(X[, !i_num], 2, factor) %>% as.data.frame()
 numLevels <- X %>% sapply(nlevels)
 numLevels[numLevels==0] <- 1
-
-
 # make the categorical variables take integer values starting from 0
 X[, !i_num] <- apply(X[, !i_num], 2, function(col) as.integer(as.factor(col)) - 1)
 ##R is such a WEIRD language
@@ -772,12 +754,10 @@ coefs
 
 ```{r}
 coefs$mainEffects
-
 idx_num <- (1:length(i_num))[i_num]
 idx_cat <- (1:length(i_num))[!i_num]
 names(numLevels)[idx_cat[coefs$mainEffects$cat]]
 names(numLevels)[idx_num[coefs$mainEffects$cont]]
-
 coefs$mainEffectsCoef
 ```
 
@@ -802,200 +782,13 @@ There is one interaction between categorical and continuous variables:
 Sp_Atk and Type_1
 ```{r}
 coefs$interactionsCoef$catcont
-
 ```
 
 ####MSE
 ```{r}
 sqrt(cv_fit$cvErr[[i_1Std]])
-
 ```
 MSE of 0.09163895
-
-
-##LASSO with interactions with hasGender Removed on Total
-
-```{r}
-#install.packages("glinternet")
-library("glinternet")
-library(dplyr)
-
-```
-
-```{r}
-poke <- data.frame(pokemon)
-
-poke<-poke[which(poke$hasGender=='True'),]
-
-y <- as.integer(poke$Total)
-
-
-#1,2 are unique and not useful
-#removed hasGender
-#using total as response
-poke <- poke[, -c(1,2, 5, 15)]
-
-poke
-
-# impute the median for the continuous variables
-i_num <- sapply(poke, is.numeric)
-poke[, i_num] <- apply(poke[, i_num], 2, function(x) ifelse(is.na(x), median(x, na.rm=T), x))
-
-# impute empty categories
-poke[, !i_num] <- apply(poke[, !i_num], 2, function(x) {
-  x[x==""] <- "empty"
-  x[is.na(x)] <- "missing"
-  x
-})
-
-# get the numLevels vector containing the number of categories
-X <- poke
-X[, !i_num] <- apply(X[, !i_num], 2, factor) %>% as.data.frame()
-numLevels <- X %>% sapply(nlevels)
-numLevels[numLevels==0] <- 1
-
-
-# make the categorical variables take integer values starting from 0
-X[, !i_num] <- apply(X[, !i_num], 2, function(col) as.integer(as.factor(col)) - 1)
-##R is such a WEIRD language
-#ike i guess its better than spending all day debugging in python and your problem is a double whitespace
-#but this is weird
-```
-
-
-```{r}
-cv_fit <- glinternet.cv(X, y, numLevels)
-#plot(cv_fit)
-```
-
-```{r}
-i_1Std <- which(cv_fit$lambdaHat1Std == cv_fit$lambda)
-coefs <- coef(cv_fit$glinternetFit)[[i_1Std]]
-coefs
-```
-
-####Main Effects (part without interactions)
-
-```{r}
-coefs$mainEffects
-
-idx_num <- (1:length(i_num))[i_num]
-idx_cat <- (1:length(i_num))[!i_num]
-names(numLevels)[idx_cat[coefs$mainEffects$cat]]
-names(numLevels)[idx_num[coefs$mainEffects$cont]]
-
-coefs$mainEffectsCoef
-```
-
-Main Effects are "HP", "Attack", "Defense", "Sp_Atk", "Sp_Def", "Speed", and "Catch_Rate"
-
-####Interactions
-```{r}
-coefs$interactions
-```
-
-There are no significant interactions
-
-####MSE
-```{r}
-sqrt(cv_fit$cvErr[[i_1Std]])
-
-```
-MSE of 0.812088
-
-
-
-##LASSO with interactions on Pr_Male
-
-```{r}
-#install.packages("glinternet")
-library("glinternet")
-library(dplyr)
-
-```
-
-```{r}
-poke <- data.frame(pokemon)
-
-poke<-poke[which(poke$hasGender=='True'),]
-
-y <- as.integer(poke$Pr_Male)
-
-
-#1,2 are unique and not useful
-#using prmale as response
-poke <- poke[, -c(1,2, 16)]
-
-poke
-
-# impute the median for the continuous variables
-i_num <- sapply(poke, is.numeric)
-poke[, i_num] <- apply(poke[, i_num], 2, function(x) ifelse(is.na(x), median(x, na.rm=T), x))
-
-# impute empty categories
-poke[, !i_num] <- apply(poke[, !i_num], 2, function(x) {
-  x[x==""] <- "empty"
-  x[is.na(x)] <- "missing"
-  x
-})
-
-# get the numLevels vector containing the number of categories
-X <- poke
-X[, !i_num] <- apply(X[, !i_num], 2, factor) %>% as.data.frame()
-numLevels <- X %>% sapply(nlevels)
-numLevels[numLevels==0] <- 1
-
-
-# make the categorical variables take integer values starting from 0
-X[, !i_num] <- apply(X[, !i_num], 2, function(col) as.integer(as.factor(col)) - 1)
-##R is such a WEIRD language
-#ike i guess its better than spending all day debugging in python and your problem is a double whitespace
-#but this is weird
-```
-
-
-```{r}
-cv_fit <- glinternet.cv(X, y, numLevels)
-#plot(cv_fit)
-```
-
-```{r}
-i_1Std <- which(cv_fit$lambdaHat1Std == cv_fit$lambda)
-coefs <- coef(cv_fit$glinternetFit)[[i_1Std]]
-```
-
-####Main Effects (part without interactions)
-
-```{r}
-coefs$mainEffects
-```
-
-```{r}
-idx_num <- (1:length(i_num))[i_num]
-idx_cat <- (1:length(i_num))[!i_num]
-names(numLevels)[idx_cat[coefs$mainEffects$cat]]
-names(numLevels)[idx_num[coefs$mainEffects$cont]]
-
-coefs$mainEffectsCoef
-```
-
-
-####Interactions
-```{r}
-coefs$interactions
-```
-
-
-####MSE
-```{r}
-sqrt(cv_fit$cvErr[[i_1Std]])
-
-```
-MSE of 0.812088
-
-
-
-
 
 #Gender Analyses
 
@@ -1113,7 +906,6 @@ poke$hasGender <- (poke$hasGender - 1)
 
 ```{r}
 poke<-data.frame(pokemon)
-
 #remove unique identifiers
 poke<-poke[,-c(1,2)]
 ```
@@ -1133,7 +925,6 @@ for(j in 1:ncol(poke2)){
       poke2[,j]<-(as.numeric(poke2[,j]))
   }
 }
-
 poke2$isLegendary <- (poke2$isLegendary - 1)
 poke2$hasMegaEvolution <- (poke2$hasMegaEvolution - 1)
 poke2$hasGender <- (poke2$hasGender - 1)
@@ -1167,15 +958,11 @@ mean(mse)
 ```{r}
 poke4<-poke[which(hasGender=='True'),]
 poke4<-data.frame(poke4[-c(2,14,16)])
-
 name<-list("Type_1", "Total", "HP", "Attack", "Defense", "Sp_Atk", "Sp_Def", "Speed", "Generation", "isLegendary", "Colour", "hasGender", "Egg_Group_1", "hasMegaEvolution", "Height_m", "Weight_kg", "Catch_Rate", "Body_Style")
-
-
 for(j in 1:ncol(poke3)){
   plot(poke2$Pr_Male~poke4[,j], xlab = name[j])
   lines(knnr20$pred, col="green", lwd=1)
 }
-
 ```
 Using k = 30
 ```{r}
@@ -1240,25 +1027,16 @@ poke<-data.frame(pokemon)
 
 ```{r}
 library(ggplot2)
-
 pokedat<-poke[which(poke$hasGender=='True'),]
 pokedat <- pokedat[,c(12,16)]
-
 ggplot(pokedat)+
   geom_point(aes(pokedat$Generation, pokedat$Pr_Male))
-
-
 library(plyr)
 mu <- ddply(pokedat, "Generation", summarise, grp.mean=mean(Pr_Male))
 head(mu)
-
-
-
 colors = c("1","2","3","4","5","6")
-
 ggplot(pokedat, aes(x=pokedat$Pr_Male, group=pokedat$Generation, fill=colors[Generation]))+
   geom_histogram(position="dodge",binwidth=0.25)+theme_bw()
-
 ```
 <!-- See what a regression tree looks like using total as the predictor and hp, attack, defense, sp_atk, sp_def, and speed as predictors. -->
 <!-- ```{r} -->
@@ -1442,30 +1220,175 @@ abline(linmod)
 Ok, now we're talking. So it looks like PC1 is correlated with the harder to catch Pokemon rather than the legendary ones. Probably a good time to start a new file, this is getting messy...
 
 
-##Neural Net predicting Pr_Male
-Optimizing number of nodes in first layer
+
+##LASSO with interactions with hasGender Removed on Total
+
 ```{r}
-set.seed(873625)
-for(i in 1:5){
-  nnmaletr <- neuralnet(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=c(i,3), threshold=0.01)
-  print(paste("Number of hidden layer variables in first layer:", i))
-  print(paste("MSE: ", mean((compute(nnmaletr, testsetg[,6:11])$net.result-testsetg$Pr_Male)^2)))
-}
+#install.packages("glinternet")
+library("glinternet")
+library(dplyr)
 ```
 
-Optimizing number of nodes in second layer
 ```{r}
-set.seed(583726)
-for(i in 1:5){
-  nnmaletr <- neuralnet(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=c(4,i), threshold=0.01)
-  print(paste("Number of hidden layer variables in second layer:", i))
-  print(paste("MSE: ", mean((compute(nnmaletr, testsetg[,6:11])$net.result-testsetg$Pr_Male)^2)))
-}
+poke <- data.frame(pokemon)
+poke<-poke[which(poke$hasGender=='True'),]
+y <- as.integer(poke$Total)
+#1,2 are unique and not useful
+#removed hasGender
+#using total as response
+poke <- poke[, -c(1,2, 5, 15)]
+poke
+# impute the median for the continuous variables
+i_num <- sapply(poke, is.numeric)
+poke[, i_num] <- apply(poke[, i_num], 2, function(x) ifelse(is.na(x), median(x, na.rm=T), x))
+# impute empty categories
+poke[, !i_num] <- apply(poke[, !i_num], 2, function(x) {
+  x[x==""] <- "empty"
+  x[is.na(x)] <- "missing"
+  x
+})
+# get the numLevels vector containing the number of categories
+X <- poke
+X[, !i_num] <- apply(X[, !i_num], 2, factor) %>% as.data.frame()
+numLevels <- X %>% sapply(nlevels)
+numLevels[numLevels==0] <- 1
+# make the categorical variables take integer values starting from 0
+X[, !i_num] <- apply(X[, !i_num], 2, function(col) as.integer(as.factor(col)) - 1)
+##R is such a WEIRD language
+#ike i guess its better than spending all day debugging in python and your problem is a double whitespace
+#but this is weird
+```
+
+
+```{r}
+cv_fit <- glinternet.cv(X, y, numLevels)
+#plot(cv_fit)
+```
+
+```{r}
+i_1Std <- which(cv_fit$lambdaHat1Std == cv_fit$lambda)
+coefs <- coef(cv_fit$glinternetFit)[[i_1Std]]
+coefs
+```
+
+####Main Effects (part without interactions)
+
+```{r}
+coefs$mainEffects
+idx_num <- (1:length(i_num))[i_num]
+idx_cat <- (1:length(i_num))[!i_num]
+names(numLevels)[idx_cat[coefs$mainEffects$cat]]
+names(numLevels)[idx_num[coefs$mainEffects$cont]]
+coefs$mainEffectsCoef
+```
+
+Main Effects are "HP", "Attack", "Defense", "Sp_Atk", "Sp_Def", "Speed", and "Catch_Rate"
+
+####Interactions
+```{r}
+coefs$interactions
+```
+
+There are no significant interactions
+
+####MSE
+```{r}
+sqrt(cv_fit$cvErr[[i_1Std]])
+```
+MSE of 0.812088
+
+
+
+##LASSO with interactions on Pr_Male
+
+```{r}
+#install.packages("glinternet")
+library("glinternet")
+library(dplyr)
+```
+
+```{r}
+poke <- data.frame(pokemon)
+poke<-poke[which(poke$hasGender=='True'),]
+y <- as.integer(poke$Pr_Male)
+#1,2 are unique and not useful
+#using prmale as response
+poke <- poke[, -c(1,2, 16)]
+poke
+# impute the median for the continuous variables
+i_num <- sapply(poke, is.numeric)
+poke[, i_num] <- apply(poke[, i_num], 2, function(x) ifelse(is.na(x), median(x, na.rm=T), x))
+# impute empty categories
+poke[, !i_num] <- apply(poke[, !i_num], 2, function(x) {
+  x[x==""] <- "empty"
+  x[is.na(x)] <- "missing"
+  x
+})
+# get the numLevels vector containing the number of categories
+X <- poke
+X[, !i_num] <- apply(X[, !i_num], 2, factor) %>% as.data.frame()
+numLevels <- X %>% sapply(nlevels)
+numLevels[numLevels==0] <- 1
+# make the categorical variables take integer values starting from 0
+X[, !i_num] <- apply(X[, !i_num], 2, function(col) as.integer(as.factor(col)) - 1)
+##R is such a WEIRD language
+#ike i guess its better than spending all day debugging in python and your problem is a double whitespace
+#but this is weird
+```
+
+
+```{r}
+cv_fit <- glinternet.cv(X, y, numLevels)
+#plot(cv_fit)
+```
+
+```{r}
+i_1Std <- which(cv_fit$lambdaHat1Std == cv_fit$lambda)
+coefs <- coef(cv_fit$glinternetFit)[[i_1Std]]
+```
+
+####Main Effects (part without interactions)
+
+```{r}
+coefs$mainEffects
+```
+
+```{r}
+idx_num <- (1:length(i_num))[i_num]
+idx_cat <- (1:length(i_num))[!i_num]
+names(numLevels)[idx_cat[coefs$mainEffects$cat]]
+names(numLevels)[idx_num[coefs$mainEffects$cont]]
+coefs$mainEffectsCoef
+```
+
+
+####Interactions
+```{r}
+coefs$interactions
+```
+
+
+####MSE
+```{r}
+sqrt(cv_fit$cvErr[[i_1Std]])
+```
+MSE of 0.812088
+
+
+##Neural Net predicting Pr_Male
+```{r}
+pokemon<-read.csv("pokemon_alopez247.csv")
+trainsetg<-trainset[which(hasGender=='True'),]
+testsetg<-testset[which(hasGender=='True'),]
+trainsetg<-na.omit(trainsetg)
+trainsetg
+testsetg<-na.omit(testsetg)
+testsetg
 ```
 
 ```{r}
 set.seed(906534)
-nnmale <- neuralnet(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=3, threshold=0.01)
+nnmale <- neuralnet(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=5, threshold=0.01)
 plotnet(nnmale)
 mse<-mean((compute(nnmale, testsetg[,6:11])$net.result-testsetg$Pr_Male)^2)
 mse
@@ -1486,7 +1409,7 @@ set.seed(1995)
 gpoke <- cbind(scale(trainset[,c(6:11, 20:22)]), factor(trainset$hasGender))
 colnames(gpoke)[10] <- "hasGender"
 gpoke<-data.frame(gpoke)
-nngend <- nnet(factor(hasGender)~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed + Catch_Rate + Height_m + Weight_kg, data=gpoke, size=5)
+nngend <- nnet(factor(hasGender)~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed + Catch_Rate + Height_m + Weight_kg, data=gpoke, size=4)
 plotnet(nngend)
 table(trainset$hasGender, predict(nngend, type="class"))
 ```
@@ -1496,16 +1419,17 @@ It appears that our neural net is effective in predicting hasGender, and also ea
   False 45   0
   True    0 460
   
-Instead 1 hidden layer with 5 nodes appears to have a reasonable misclassification without totally overfitting. Let's try this on gspoketest,
+Instead 1 hidden layer with 4 nodes appears to have a reasonable misclassification without totally overfitting. Let's try this on gspoketest,
 
 ```{r}
-gpoketest <- cbind(scale(trainset[,c(6:11, 20:22)]), factor(testset$hasGender))
+gpoketest <- cbind(scale(testset[,c(6:11, 20:22)]), factor(testset$hasGender))
 colnames(gpoketest)[10] <- "hasGender"
 gpoketest<-data.frame(gpoketest)
 table(gpoketest$hasGender, predict(nngend, newdata=gpoketest, type="class"))
 ```
 
-It appears then that the optimal amount of nodes for our neural network is equal to 5 within 1 hidden layer. We can see that our misclassification for our gpoketest is relatively okay, and appears to be the best balance when we tune our network to 5 nodes. 
+It appears then that the optimal amount of nodes for our neural network is equal to 4 within 1 hidden layer. We can see that our misclassification for our gpoketest is relatively okay, and appears to be the best balance when we tune our network to 4 nodes. 
+It should not come as a surprise that hasGender is easily modeled with a neural net from the stat predictors provided. Given that the better the stats, the more likely the Pokemon is to be of the legendary type, and thus too likely not to have a gender. Our neural nets ability to predict gender based on the Pokemon's stats confirms that the higher or "better" the stats, the more likely the Pokemon is to not have a gender. 
 
 ##Neural net predicting Generation
 ```{r}
@@ -1515,25 +1439,18 @@ library(neuralnet)
 library(NeuralNetTools)
 set.seed(19127395)
 #nnGeneration <- neuralnet(Generation ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed + Pr_Male,data=trainsetg, hidden=5, threshold=0.01)
-nnGeneration <- neuralnet(Generation ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=5, threshold=0.01)
+nnGeneration <- neuralnet(Generation ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=4, threshold=0.01)
 plotnet(nnGeneration)
 mse<-mean((compute(nnGeneration, testsetg[,6:11])$net.result-testsetg$Generation)^2)
 mse
 ```
 
-Optimizing number of nodes in first layer
 ```{r}
-for(i in 1:5){
-  nnmaletr <- neuralnet(Generation ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=3, threshold=0.01)
-  print(paste("Number of hidden layer variables in first layer:", i))
-  print(paste("MSE: ", mean((compute(nnmaletr, testsetg[,6:11])$net.result-testsetg$Pr_Male)^2)))
-}
-```
-
-```{r}
+set.seed(19127395)
 linmod<-lm(Generation ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg)
 mean((predict(linmod,newdata=testsetg)-testsetg$Generation)^2)
 ```
+
 
 #Mixture Modeling
 Predictors 6-10 (Attack, Defense, Sp_Atk, Sp_Def) used in generating clPairs and mclust
@@ -1548,7 +1465,7 @@ clPairsLegend(0.1, 0.4, class = clp$class,
 
 These do not appear to help all too much, let's try using the teigen and mclust functions,
 
-#mclust without scaling
+##mclust without scaling
 ```{r}
 library(teigen)
 library(mclust)
@@ -1576,10 +1493,9 @@ It may be reasonable to suggest that using mclust on the Pokemon data set may no
 ```{r}
 mrun5 <- Mclust(pokemon[c(6:8, 20:21)], 5)
 #table(pokemon$Egg_Group_1, mrun5$classification)
-adjustedRandIndex(pokemon$Egg_Group_1, mrun5$classification)
-spoketest <- cbind(scale(testsetg[,6:11]), factor(testsetg$Generation))
-colnames(spoketest)[7] <- "Generation"
-spoketest<-data.frame(spoketest)
-length(poke1$isLegendary)
-table(spoketest$isLegendary, predict(nnGen, newdata=spoketest, type="class"))
+plot(pokemon[16:20], col=mrun5$classification)
+adjustedRandIndex(pokemon$Height_m, mrun5$classification)
 ```
+
+From the plot above it appears that possibly height may be related to the groupings, however when we run adjustedRandIndex, we see a value of 0.08019253 that indicates low aggreement. It is worth noting that Height_m is a continuous variable, which may pose the seperate issue of evaluating agreement with the adjusted random index using Weight_m. Overall, it appears that Mclust and adjustedRandIndex is not particularly useful in better understanding our data, and may paint an inaccurate representation of groups that cannot be confirmed nor denied through use of the  Mclust and adjustedRandIndex functions. 
+
