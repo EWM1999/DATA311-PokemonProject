@@ -1370,7 +1370,7 @@ MSE of 0.812088
 
 ##Neural Net predicting Pr_Male
 ```{r}
-pokemon<-read.csv("pokemon_alopez247.csv")
+attach(data)
 trainsetg<-trainset[which(hasGender=='True'),]
 testsetg<-testset[which(hasGender=='True'),]
 trainsetg<-na.omit(trainsetg)
@@ -1381,11 +1381,16 @@ testsetg
 
 ```{r}
 set.seed(906534)
-nnmale <- neuralnet(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=5, threshold=0.01)
+library(neuralnet)
+library(gclus)
+library(nnet)
+library(NeuralNetTools)
+nnmale <- neuralnet(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=3, threshold=0.01)
 plotnet(nnmale)
 mse<-mean((compute(nnmale, testsetg[,6:11])$net.result-testsetg$Pr_Male)^2)
 mse
 ```
+
 
 ```{r}
 linmod<-lm(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg)
@@ -1408,9 +1413,7 @@ table(trainset$hasGender, predict(nngend, type="class"))
 ```
 It appears that our neural net is effective in predicting hasGender, and also easy to generate an overfitted model for. 
 1 hidden layer with 11 nodes appears to overfit the model, 
-         1   2
-  False 45   0
-  True    0 460
+
   
 Instead 1 hidden layer with 4 nodes appears to have a reasonable misclassification without totally overfitting. Let's try this on gspoketest,
 
