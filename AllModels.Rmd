@@ -183,43 +183,6 @@ mean(linmod$residuals^2)
 mean((poke.test$Total-predicted)^2)
 ```
 
-#Boosting
-```{r}
-poke <- data.frame(pokemon)
-poke$isLegendary<-(as.integer(factor(poke$isLegendary))-1)
-poke<-poke[,-c(1,2)]
-set.seed(1995)
-train<-sample(1:nrow(poke),432)
-poke.test<-poke[-train,]
-poke.train<-poke[train,]
-library(glmnet)
- library(gbm)
- library(gclus)
-```
-
-## Boosting
-
-Let's try using boosting on the pokemon data to predict if Legendary
-```{r}
- set.seed(54390)
- pboost <- gbm(isLegendary~., distribution="bernoulli", data=poke, n.trees=5000, interaction.depth=1)
- table(poke$isLegendary, predict(pboost, newdata=poke, type="response", n.trees=5000)>0.5 )
- summary(pboost)
-```
-
-
-Splitting the data up into training and testing data....
-```{r}
-set.seed(54390)
-pboost <- gbm(isLegendary~., distribution="bernoulli", data=poke.train, n.trees=5000, interaction.depth=1)
-table(poke.test$isLegendary, predict(pboost, newdata=poke.test, type="response", n.trees=5000)>0.5 )
-summary(pboost)
-```
-
-4 misclassifications... 
-Looks like Total, Catch_Rate, Egg_Group1_1, and Pr_Male are the 4 most important variables in decreasing order.
-it's interesting how hasGender is the second least important variable....
-
 
 #Regression Tree, Total as response and HP, Attack, Defense, Sp_Atk, Sp_Def, and Speed as predictors
 ```{r}
@@ -260,6 +223,42 @@ pokeRF
 pokeRF2<-randomForest(isLegendary~Total+hasGender,data=poke.train,mtry=3,importance=TRUE)
 pokeRF2
 ```
+#Boosting
+```{r}
+poke <- data.frame(pokemon)
+poke$isLegendary<-(as.integer(factor(poke$isLegendary))-1)
+poke<-poke[,-c(1,2)]
+set.seed(1995)
+train<-sample(1:nrow(poke),432)
+poke.test<-poke[-train,]
+poke.train<-poke[train,]
+library(glmnet)
+ library(gbm)
+ library(gclus)
+```
+
+## Boosting
+
+Let's try using boosting on the pokemon data to predict if Legendary
+```{r}
+ set.seed(54390)
+ pboost <- gbm(isLegendary~., distribution="bernoulli", data=poke, n.trees=5000, interaction.depth=1)
+ table(poke$isLegendary, predict(pboost, newdata=poke, type="response", n.trees=5000)>0.5 )
+ summary(pboost)
+```
+
+
+Splitting the data up into training and testing data....
+```{r}
+set.seed(54390)
+pboost <- gbm(isLegendary~., distribution="bernoulli", data=poke.train, n.trees=5000, interaction.depth=1)
+table(poke.test$isLegendary, predict(pboost, newdata=poke.test, type="response", n.trees=5000)>0.5 )
+summary(pboost)
+```
+
+4 misclassifications... 
+Looks like Total, Catch_Rate, Egg_Group1_1, and Pr_Male are the 4 most important variables in decreasing order.
+it's interesting how hasGender is the second least important variable....
 
  
 #KNN Classification
