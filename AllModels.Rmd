@@ -732,9 +732,7 @@ numLevels <- X %>% sapply(nlevels)
 numLevels[numLevels==0] <- 1
 # make the categorical variables take integer values starting from 0
 X[, !i_num] <- apply(X[, !i_num], 2, function(col) as.integer(as.factor(col)) - 1)
-##R is such a WEIRD language
-#ike i guess its better than spending all day debugging in python and your problem is a double whitespace
-#but this is weird
+
 ```
 
 
@@ -1253,9 +1251,7 @@ numLevels <- X %>% sapply(nlevels)
 numLevels[numLevels==0] <- 1
 # make the categorical variables take integer values starting from 0
 X[, !i_num] <- apply(X[, !i_num], 2, function(col) as.integer(as.factor(col)) - 1)
-##R is such a WEIRD language
-#ike i guess its better than spending all day debugging in python and your problem is a double whitespace
-#but this is weird
+
 ```
 
 
@@ -1330,9 +1326,7 @@ numLevels <- X %>% sapply(nlevels)
 numLevels[numLevels==0] <- 1
 # make the categorical variables take integer values starting from 0
 X[, !i_num] <- apply(X[, !i_num], 2, function(col) as.integer(as.factor(col)) - 1)
-##R is such a WEIRD language
-#ike i guess its better than spending all day debugging in python and your problem is a double whitespace
-#but this is weird
+
 ```
 
 
