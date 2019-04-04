@@ -771,7 +771,7 @@ The $catcat tells us that there is no interaction between the categorical variab
 
 Three pairs of continuous variables have interactions:  
 $(1,5)$, $(1,6)$, and $(1,11)$
-Total interacts with Sp_Atk, Sp_Def, and (i counted catch rate but i think ti should be weight?), which is interesting.
+Total interacts with Sp_Atk, Sp_Def, and Catch_Rate, which is interesting.
 
 ```{r}
 coefs$interactionsCoef$contcont
