@@ -233,8 +233,8 @@ set.seed(1995)
 train<-sample(1:nrow(pokemon),432)
 poke.test<-pokemon[-train,]
 poke.train<-pokemon[train,]
-train.x<-cbind(HP,Attack,Defense,Sp_Atk,Sp_Def,Speed,Height_m,Weight_kg,Catch_Rate)[train,]
-test.x<-cbind(HP,Attack,Defense,Sp_Atk,Sp_Def,Speed,Height_m,Weight_kg,Catch_Rate)[-train,]
+train.x<-cbind(HP,Attack,Defense,Sp_Atk,Sp_Def,Speed,Catch_Rate)[train,]
+test.x<-cbind(HP,Attack,Defense,Sp_Atk,Sp_Def,Speed,Catch_Rate)[-train,]
 train.legend<-isLegendary[train]
 ```
 
@@ -242,15 +242,18 @@ Now we'll run KNN on the testing data set using the training data and see how it
 
 ```{r}
 library(class)
+library(MLmetrics)
 knnLegend.pred<-knn(train.x,test.x,train.legend,k=5)
 table(knnLegend.pred,poke.test$isLegendary)
+F1_Score(knnLegend.pred,poke.test$isLegendary)
 ```
 
 Pretty great! Let's look at cross-validated error
 
 ```{r}
-knnLegendCV<-knn.cv(cbind(HP,Attack,Defense,Sp_Atk,Sp_Def,Speed,Height_m,Weight_kg,Catch_Rate),pokemon$isLegendary,k=5,p=1)#,method="classification")
+knnLegendCV<-knn.cv(cbind(HP,Attack,Defense,Sp_Atk,Sp_Def,Speed,Catch_Rate),pokemon$isLegendary,k=5,p=1)#,method="classification")
 table(knnLegendCV,pokemon$isLegendary)
+F1_Score(knnLegendCV,pokemon$isLegendary)
 ```
 
 
@@ -611,9 +614,10 @@ text(prunePokeG, pretty=0)
 ```{r}
 attach(poke1)
 library(tree)
-pocl<-tree(Pr_Male~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke1)
+pocl<-tree(Pr_Male~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed+Height_m+Weight_kg+Catch_Rate,data=poke1)
 plot(pocl)
 text(pocl)
+mean((poke1$Pr_Male-predict(pocl))^2)
 ```
 
 Ok, let's prune this tree down now...
@@ -624,18 +628,25 @@ size<-{}
 for(i in 1:100) {
   set.seed(i)
   cv.pocl<-cv.tree(pocl, FUN=prune.tree)
-  thing<-cv.pocl$size[which.min(cv.pocl$dev)]
-  size[i]<-thing
+  size[i]<-cv.pocl$size[which.min(cv.pocl$dev)]
 }
-hist(size)
-sort(table(size),decreasing=TRUE)[1:3]
+data.frame(table(size))
 ```
 
 ```{r}
-p.pocl<-prune.tree(pocl,best=3)
+p.pocl<-prune.tree(pocl,best=2)
 plot(p.pocl)
 text(p.pocl)
 summary(p.pocl)
+mean((poke1$Pr_Male-predict(p.pocl))^2)
+```
+
+```{r}
+p.pocl<-prune.tree(pocl,best=4)
+plot(p.pocl)
+text(p.pocl)
+summary(p.pocl)
+mean((poke1$Pr_Male-predict(p.pocl))^2)
 ```
 
 Alright, let's use bagging now...
@@ -643,9 +654,10 @@ Alright, let's use bagging now...
 ```{r}
 library(randomForest)
 set.seed(1995)
-pokebag<-randomForest(Pr_Male~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke1,mtry=6,importance=TRUE)
+pokebag<-randomForest(Pr_Male~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed+Height_m+Weight_kg+Catch_Rate,data=poke1,mtry=9,importance=TRUE)
 pokebag
 varImpPlot(pokebag)
+mean((poke1$Pr_Male-predict(pokebag))^2)
 ```
 
 Well that didn't work out very well...
@@ -653,12 +665,61 @@ Well that didn't work out very well...
 How about random forest...
 
 ```{r}
-pokeRF<-randomForest(Pr_Male~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke1,mtry=3,importance=TRUE)
+pokeRF<-randomForest(Pr_Male~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed+Height_m+Weight_kg+Catch_Rate,data=poke1,mtry=1,importance=TRUE)
 pokeRF
 varImpPlot(pokeRF)
+mean((poke1$Pr_Male-predict(pokeRF))^2)
 ```
 Very slightly better, still not a lot of evidence that this model is any good.
 
+```{r}
+poketree<-tree(Pr_Male~Attack+Defense+Height_m+Weight_kg+Catch_Rate,data=poke1)
+plot(pocl)
+text(pocl)
+mean((poke1$Pr_Male-predict(poketree))^2)
+```
+Ok, let's prune this tree down now...
+
+```{r}
+j<-sample(0,10000,100)
+size<-{}
+for(i in 1:100) {
+  set.seed(i)
+  cv.poketree<-cv.tree(poketree, FUN=prune.tree)
+  size[i]<-cv.poketree$size[which.min(cv.poketree$dev)]
+}
+data.frame(table(size))
+```
+
+```{r}
+p.poketree<-prune.tree(pocl,best=4)
+plot(p.poketree)
+text(p.poketree)
+summary(p.poketree)
+mean((poke1$Pr_Male-predict(p.poketree))^2)
+```
+
+Alright, let's use bagging now...
+
+```{r}
+library(randomForest)
+set.seed(1995)
+poketbag<-randomForest(Pr_Male~Attack+Defense+Height_m+Weight_kg+Catch_Rate,data=poke1,mtry=5,importance=TRUE)
+poketbag
+varImpPlot(poketbag)
+mean((poke1$Pr_Male-predict(poketbag))^2)
+```
+
+Well that didn't work out very well...
+
+How about random forest...
+
+```{r}
+poketRF<-randomForest(Pr_Male~Attack+Defense+Height_m+Weight_kg+Catch_Rate,data=poke1,mtry=1,importance=TRUE)
+poketRF
+varImpPlot(poketRF)
+mean((poke1$Pr_Male-predict(poketRF))^2)
+```
 
 ##KNN
 ```{r}
