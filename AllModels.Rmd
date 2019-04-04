@@ -282,7 +282,7 @@ library(class)
 library(MLmetrics)
 knnLegend.pred<-knn(train.x,test.x,train.legend,k=5)
 table(knnLegend.pred,poke.test$isLegendary)
-F1_Score(knnLegend.pred,poke.test$isLegendary)
+F1_Score(poke.test$isLegendary,knnLegend.pred,positive="True")
 ```
 
 Pretty great! Let's look at cross-validated error
@@ -290,7 +290,7 @@ Pretty great! Let's look at cross-validated error
 ```{r}
 knnLegendCV<-knn.cv(cbind(HP,Attack,Defense,Sp_Atk,Sp_Def,Speed,Catch_Rate),pokemon$isLegendary,k=5,p=1)#,method="classification")
 table(knnLegendCV,pokemon$isLegendary)
-F1_Score(knnLegendCV,pokemon$isLegendary)
+F1_Score(pokemon$isLegendary,knnLegendCV,positive="True")
 ```
 
 
@@ -506,7 +506,8 @@ Create PCA model
 
 ```{r}
 poke<-data.frame(pokemon)
-poke2<-poke[,c(6:11,20:21)]
+poke2<-poke[,c(6:11,20:22)]
+head(poke)
 pcapoke <- prcomp(as.matrix(poke2), scale=TRUE)
 summary(pcapoke)
 biplot(pcapoke)
@@ -518,9 +519,39 @@ Despite only accounting for 58% of the variance in the model, the Kaiser criteri
 round(pcapoke$rotation[,1:2], 2)
 ```
 
-Looking at the first two principal components, the first has a high loading on most numeric stats.
+Looking at the first two principal components, the first has a high loading on most numeric stats. This may suggest that it can be used to predict isLegendary, let's run lda using PC1 as a predictor
 
-Several analyses were run using the principal components, none of which proved to be very useful, EXCEPT FOR...
+##LDA on PC1
+
+```{r}
+poke[order(pcapoke$x[,1], decreasing=TRUE)[1:4] ,]
+```
+
+```{r}
+poke[order(pcapoke$x[,2], decreasing=TRUE)[1:4] , 1:11]
+```
+
+The first component seems to refer to high stat, low catch rate Pokemon. Wait, let's see how many of them are legendary...
+
+```{r}
+poke[order(pcapoke$x[,1], decreasing=TRUE)[1:20],]
+```
+
+
+17 of the first 20 are legendary, this is a good sign. Let's see how PC1 correlates with isLegendary...
+
+```{r}
+library(MASS)
+pcleg<-data.frame(pcapoke$x)
+pcleg[1:20,]
+leglda <- lda(factor(poke$isLegendary)~pcleg[,1])
+leglda
+table(poke$isLegendary,predict(leglda)$class)
+F1_Score(poke$isLegendary,predict(leglda)$class,positive="True")
+Recall(poke$isLegendary,predict(leglda)$class,positive="True")
+```
+
+So, it looks like PC1 does a decent job of classifying isLegendary, although the Recall is not great (i.e. it predicts False for isLegendary for a large number of trues).
 
 ##Classification trees on PCA
 
@@ -534,11 +565,14 @@ plot(pccl)
 text(pccl)
 summary(pccl)
 table(predict(pccl,poke,type="class"),poke$isLegendary)
+F1_Score(poke$isLegendary,predict(pccl,poke,type="class"),positive="True")
+Recall(poke$isLegendary,predict(pccl,poke,type="class"),positive="True")
 ```
 
 ALthough this model does relatively well on prediction, it seems needlessly complex, so we'll try pruning down.
 
 ```{r}
+set.seed(13453)
 cv.pccl<-cv.tree(pccl,FUN=prune.misclass)
 plot(cv.pccl,type="b")
 cv.pccl
@@ -547,10 +581,12 @@ cv.pccl
 Cross-validation suggests six terminal nodes does as well as the original ten, let's see.
 
 ```{r}
-pr.pccl<-prune.misclass(pccl,best = 6)
+pr.pccl<-prune.misclass(pccl,best = 7)
 plot(pr.pccl)
 text(pr.pccl)
 table(predict(pr.pccl,poke,type="class"),poke$isLegendary)
+F1_Score(poke$isLegendary,predict(pr.pccl,poke,type="class"),positive="True")
+Recall(poke$isLegendary,predict(pr.pccl,poke,type="class"),positive="True")
 ```
 
 As predicted, six terminal nodes on the classification tree predict as well as ten.
@@ -563,6 +599,13 @@ set.seed(1995)
 pcbag<-randomForest(poke$isLegendary~pc[,1]+pc[,2],mtry=2,importance=TRUE)
 pcbag
 varImpPlot(pcbag)
+table(poke$isLegendary,predict(pcbag,poke,type="class"))
+pcbrec<-31/46
+pcbrec
+pcbprec<-662/677
+pcbprec
+pcbf1<-2*pcbrec*pcbprec/(pcbrec+pcbprec)
+pcbf1
 ```
 
 The bagged model performs worse, although because of the way the confusion matrix is calculated, it gives us a better idea at long run performance of the model (i.e. our cross-validated tree may be overfitting). Let's take a look at the random forest model.
@@ -572,6 +615,12 @@ set.seed(1995)
 pcrf<-randomForest(poke$isLegendary~pc[,1]+pc[,2],mtry=1,importance=TRUE)
 pcrf
 varImpPlot(pcrf)
+pcbrec<-29/46
+pcbrec
+pcbprec<-662/679
+pcbprec
+pcbf1<-2*pcbrec*pcbprec/(pcbrec+pcbprec)
+pcbf1
 ```
 
 Very slightly better than bagging (which makes sense since we are only using two variables for classification). The variable importance plot gives almost no importance to PC2 for predicting isLegendary. Let's try classifying using only PC1 with some other models.
@@ -810,6 +859,8 @@ text(prunePokeG, pretty=0)
 
 ##Trees on the new data set
 
+Let's look at predicting Pr_Male using the numeric stats:
+
 ```{r}
 attach(poke1)
 library(tree)
@@ -819,7 +870,7 @@ text(pocl)
 mean((poke1$Pr_Male-predict(pocl))^2)
 ```
 
-Ok, let's prune this tree down now...
+Ok, let's prune this tree down now... (note the for loop is used because the best number of terminal nodes varied depending on the seed)
 
 ```{r}
 j<-sample(0,10000,100)
@@ -832,6 +883,8 @@ for(i in 1:100) {
 data.frame(table(size))
 ```
 
+Now we'll take a look at a tree pruned down to two terminal nodes.
+
 ```{r}
 p.pocl<-prune.tree(pocl,best=2)
 plot(p.pocl)
@@ -839,6 +892,8 @@ text(p.pocl)
 summary(p.pocl)
 mean((poke1$Pr_Male-predict(p.pocl))^2)
 ```
+
+That doesn't explain much, so let's take a look at four terminal nodes instead.
 
 ```{r}
 p.pocl<-prune.tree(pocl,best=4)
@@ -869,7 +924,10 @@ pokeRF
 varImpPlot(pokeRF)
 mean((poke1$Pr_Male-predict(pokeRF))^2)
 ```
+
 Very slightly better, still not a lot of evidence that this model is any good.
+
+Let's see what the tree looks like when we cut out the least important predictors.
 
 ```{r}
 poketree<-tree(Pr_Male~Attack+Defense+Height_m+Weight_kg+Catch_Rate,data=poke1)
@@ -877,6 +935,7 @@ plot(pocl)
 text(pocl)
 mean((poke1$Pr_Male-predict(poketree))^2)
 ```
+
 Ok, let's prune this tree down now...
 
 ```{r}
@@ -889,6 +948,8 @@ for(i in 1:100) {
 }
 data.frame(table(size))
 ```
+
+Tree pruned down to four terminal nodes.
 
 ```{r}
 p.poketree<-prune.tree(pocl,best=4)
@@ -909,8 +970,6 @@ varImpPlot(poketbag)
 mean((poke1$Pr_Male-predict(poketbag))^2)
 ```
 
-Well that didn't work out very well...
-
 How about random forest...
 
 ```{r}
@@ -919,6 +978,8 @@ poketRF
 varImpPlot(poketRF)
 mean((poke1$Pr_Male-predict(poketRF))^2)
 ```
+
+These models performed worse than if we kept all the numerical predictors.
 
 ##KNN
 ```{r}
@@ -1179,11 +1240,13 @@ The first 13 are legendary, this is a good sign. Let's see how PC1 correlates wi
 library(MASS)
 pcleg<-data.frame(pcapoke$x)
 pcleg[1:20,]
-leglda <- lda(factor(poke$isLegendary)~PC1+PC2,data=pcleg)
+leglda <- lda(factor(poke$isLegendary)~pcleg[,1])
 leglda
+table(poke$isLegendary,predict(leglda)$class)
+F1_Score(poke$isLegendary, predict(leglda)$class)
 ```
 
-I might just be high, but I'm pretty sure this indicates PC1 is a pretty good predictor for isLegendary. PC2 doesn't really seem to refer to anything here...
+OK, so using LDA with PC1 as a predictor is a pretty great model for predicting isLegendary!
 
 
 ##Gender PCA
