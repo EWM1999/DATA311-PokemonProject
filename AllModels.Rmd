@@ -13,6 +13,29 @@ knitr::opts_chunk$set(echo = TRUE)
 pokemon<-read.csv("pokemon_alopez247.csv")
 ```
 
+The following models will require the libraries listed below,
+```{r}
+library(mclust)
+library(cluster)
+library(dplyr)
+library(fpc)
+library(glmnet)
+library(gbm)
+library(gclus)
+library(ggplot2)
+library(DAAG)
+library(MASS)
+library(MLmetrics)
+library(FNN)
+library(tree)
+library(wesanderson)
+library(teigen)
+library(mclust)
+library(nnet)
+library(neuralnet)
+library(NeuralNetTools)
+library("glinternet")
+```
 
 Pokemon dataset split into training and testing sets
 ```{r}
