@@ -1581,6 +1581,7 @@ clp <- clPairs(pokemon[c(6:8, 20:21)], cl = pokemon$Total, lower.panel = NULL)
 clPairsLegend(0.1, 0.4, class = clp$class, 
               col = clp$col, pch = clp$pch, 
               title = "Pokemon Type_1")
+#https://www.rdocumentation.org/packages/mclust/versions/5.4.3/topics/clPairs
 ```
 
 These do not appear to help all too much, let's try using the teigen and mclust functions,
@@ -1618,4 +1619,3 @@ adjustedRandIndex(pokemon$Height_m, mrun5$classification)
 ```
 
 From the plot above it appears that possibly height may be related to the groupings, however when we run adjustedRandIndex, we see a value of 0.08019253 that indicates low aggreement. It is worth noting that Height_m is a continuous variable, which may pose the seperate issue of evaluating agreement with the adjusted random index using Weight_m. Overall, it appears that Mclust and adjustedRandIndex is not particularly useful in better understanding our data, and may paint an inaccurate representation of groups that cannot be confirmed nor denied through use of the  Mclust and adjustedRandIndex functions. 
-
