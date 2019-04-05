@@ -1538,7 +1538,6 @@ MSE of 0.812088
 
 ##Neural Net predicting Pr_Male
 ```{r}
-attach(data)
 trainsetg<-trainset[which(hasGender=='True'),]
 testsetg<-testset[which(hasGender=='True'),]
 trainsetg<-na.omit(trainsetg)
