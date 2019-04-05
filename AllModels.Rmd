@@ -711,14 +711,18 @@ testsetg
 
 ##LASSO
 
+##LASSO
+
 Let's try using LASSO to remove predictors from the linear model
+
+
 
 ```{r}
 library(glmnet)
 set.seed(53342)
 pkmn<-data.frame(pokemon, stringsAsFactors = TRUE)
 pkmn[is.na(pkmn)] <- 0
-x <- data.matrix(pkmn)[,-13]
+x <- data.matrix(pkmn)[,-c(1,2,13)]
 y <- as.integer(as.logical(pkmn$isLegendary))
 grid<-exp(seq(-1.5,-8.25,length=100))
 lassomod<-cv.glmnet(x,y, family = "binomial", alpha=1, lambda = grid)
@@ -736,8 +740,18 @@ Overall, the most important predictor is hasGender. This is not surprising and m
 However, it is interesting and worth point out that after Pr_Male is removed, it becomes a more more promenent predictor. This is because Pr_Male is in many ways repeat data from hasGender. Any pokemon without a gernder has no probablity of being male. 
 
 ```{r}
+lassomod$cvm[lassomod$lambda == lassomod$lambda.min] # MSE of cross validation with best lambda
+ 
+```
+MSE = 0.08835933
+reference for code: https://stats.stackexchange.com/questions/269534/why-is-mse-of-cross-validation-higher-compared-to-a-linear-model
+
+
+##Lasso hasGender~.
+
+```{r}
 pkmn<-data.frame(pokemon, stringsAsFactors = TRUE)
-x <- data.matrix(pkmn)[,-c(15, 16)]
+x <- data.matrix(pkmn)[,-c(1,2, 15, 16)]
 y <- as.integer(as.logical(pkmn$hasGender))
 grid<-exp(seq(-2,-9,length=200))
 lassomod<-cv.glmnet(x,y, family = "binomial", alpha=1, lambda = grid)
@@ -747,15 +761,32 @@ lammin <- lassomod$lambda.min
 lam1se <- lassomod$lambda.1se
 lasimmin <- glmnet(x,y,alpha = 1, lambda=lammin)
 lasim1se <- glmnet(x,y,alpha = 1, lambda=lam1se)
+
 ```
+
 Removed $pokemon\$Pr\_Male$ bc is dependent on $pokemon\$hasGender$ and minimum was $\lim(LogLambda->-infinity)$.
+
 ```{r}
 coef(lasimmin)
 ```
+Total, Generation and Catch_Rate are removed...
 ```{r}
 coef(lasim1se)
 ```
+$hasGender = 1.658138 - 1.717024 * 10^-06 * Sp\_Atk - 5.713537 * 10^-04 * Sp\_Def - 0.6509096 * isLegendary -3.443872* 10^-03 * Egg\_Group\_1 + 2.412421e-04 * Egg\_Group\_2 + -1.037037e-04 * Weight\_kg$
+
+
+
+```{r}
+lassomod$cvm[lassomod$lambda == lassomod$lambda.min] # MSE of cross validation with best lambda
+ 
+```
+MSE = 0.3995362
+
 Looks like $pokemon\$isLegendary$ is the most important variable...
+
+##Lasso on Pr_Male~.
+
 ```{r}
 poke0<-data.frame(pokemon)
 poke1<-poke0[which(poke0$hasGender=='True'),]
@@ -770,13 +801,25 @@ lam1se <- lassomod$lambda.1se
 lasimmin <- glmnet(x,y,alpha = 1, lambda=lammin)
 lasim1se <- glmnet(x,y,alpha = 1, lambda=lam1se)
 ```
+
 ```{r}
 coef(lasimmin)
 ```
+Only removed Total and hasGender...
 ```{r}
 coef(lasim1se)
 ```
+
+0.5952540632 - 0.0004248476 Type_2 -0.0010029107 HP + 0.0006922985 Attack + 0.0032618948 isLegendary + 0.0024960139 Egg_Group_1 + 0.0040329244 Egg_Group_2 - 0.0005070587 CatchRate  - 0.0003747370 BodyStyle
+
 One thing to note is that this appears to have a large standard deviation.... The true minimum is at 19 variables but one standard deviation from that gives 8 variables.
+
+
+```{r}
+lassomod$cvm[lassomod$lambda == lassomod$lambda.min] # MSE of cross validation with best lambda
+ 
+```
+MSE = 0.03397727
 
 
 
