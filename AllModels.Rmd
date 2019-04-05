@@ -1526,15 +1526,15 @@ library(neuralnet)
 library(gclus)
 library(nnet)
 library(NeuralNetTools)
-nnmale <- neuralnet(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg, hidden=3, threshold=0.01)
+nnmale <- neuralnet(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed + Catch_Rate + Weight_kg +Height_m,data=trainsetg, hidden=5, threshold=0.01)
 plotnet(nnmale)
-mse<-mean((compute(nnmale, testsetg[,6:11])$net.result-testsetg$Pr_Male)^2)
+mse<-mean((compute(nnmale, testsetg[,c(6:11, 20:22)])$net.result-testsetg$Pr_Male)^2)
 mse
 ```
 
 
 ```{r}
-linmod<-lm(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed,data=trainsetg)
+linmod<-lm(Pr_Male ~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed + Catch_Rate + Weight_kg +Height_m,data=trainsetg)
 mean((predict(linmod,newdata=testsetg)-testsetg$Pr_Male)^2)
 ```
 This is pretty close to our neural net modeled above when we use 1 hidden layer and 3 nodes. 
@@ -1548,7 +1548,7 @@ set.seed(1995)
 gpoke <- cbind(scale(trainset[,c(6:11, 20:22)]), factor(trainset$hasGender))
 colnames(gpoke)[10] <- "hasGender"
 gpoke<-data.frame(gpoke)
-nngend <- nnet(factor(hasGender)~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed + Catch_Rate + Height_m + Weight_kg, data=gpoke, size=4)
+nngend <- nnet(factor(hasGender)~ Attack + Defense + HP + Sp_Atk + Sp_Def + Speed + Catch_Rate + Height_m + Weight_kg, data=gpoke, size=)
 plotnet(nngend)
 table(trainset$hasGender, predict(nngend, type="class"))
 ```
@@ -1630,7 +1630,7 @@ It may be reasonable to suggest that using mclust on the Pokemon data set may no
 ```{r}
 mrun5 <- Mclust(pokemon[c(6:8, 20:21)], 5)
 #table(pokemon$Egg_Group_1, mrun5$classification)
-plot(pokemon[16:20], col=mrun5$classification)
+plot(pokemon[c(16:18,20)], col=mrun5$classification)
 adjustedRandIndex(pokemon$Height_m, mrun5$classification)
 ```
 
