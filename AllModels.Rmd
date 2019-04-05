@@ -1202,11 +1202,12 @@ ggplot(pokedat, aes(x=pokedat$Pr_Male, group=pokedat$Generation, fill=colors[Gen
 Alright, let's check out PCA on Pr_Male response with ...stats as predictors
 
 ```{r}
+poke<-data.frame(pokemon)
 head(poke)
 ```
 
 ```{r}
-pcapoke <- prcomp(as.matrix(poke[,6:11]), scale.=TRUE)
+pcapoke <- prcomp(as.matrix(poke[,c(6:11,20:22)]), scale.=TRUE)
 summary(pcapoke)
 biplot(pcapoke)
 ```
@@ -1214,18 +1215,31 @@ biplot(pcapoke)
 Ok cool, two principal components satisfy the Kaiser criterion. Let's take a look at which predictors influence these components...
 
 ```{r}
-round(pcapoke$rotation[,1:2], 2)
+round(pcapoke$rotation[,1:5], 2)
 ```
 
 Ok, so looks like PC1 refers to kind of all around, balanced pokemon, and PC2 refers to slow defenders with bad HP? I don't think this model is all that great... But, let's see which pokemon each component is referring to.
 
 ```{r}
-poke[order(pcapoke$x[,1], decreasing=TRUE)[1:4] , 1:11]
+poke[order(pcapoke$x[,1], decreasing=TRUE)[1:4] ,]
 ```
 
 ```{r}
-poke[order(pcapoke$x[,2], decreasing=TRUE)[1:4] , 1:11]
+poke[order(pcapoke$x[,2], decreasing=TRUE)[1:4] ,]
 ```
+
+```{r}
+poke[order(pcapoke$x[,3], decreasing=TRUE)[1:4] ,]
+```
+
+```{r}
+poke[order(pcapoke$x[,4], decreasing=TRUE)[1:4] ,]
+```
+
+```{r}
+poke[order(pcapoke$x[,5], decreasing=TRUE)[1:4] ,]
+```
+
 
 The first component doesn't really seem to refer to much at all, just kind of all around generalists maybe. The totals are quite high though, so maybe these are the powerhouses? Wait, let's see how many of them are legendary...
 
@@ -1246,7 +1260,7 @@ table(poke$isLegendary,predict(leglda)$class)
 F1_Score(poke$isLegendary, predict(leglda)$class)
 ```
 
-OK, so using LDA with PC1 as a predictor is a pretty great model for predicting isLegendary!
+OK, so using LDA with PC1 as a predictor is a decent model for predicting isLegendary.
 
 
 ##Gender PCA
@@ -1254,7 +1268,8 @@ OK, so using LDA with PC1 as a predictor is a pretty great model for predicting 
 Ok, now let's run PCA on the subset that has a gender
 
 ```{r}
-pcagenpoke <- prcomp(as.matrix(poke1[,6:11]), scale.=TRUE)
+poke1<-poke[which(hasGender=='True'),]
+pcagenpoke <- prcomp(as.matrix(poke1[,c(6:11,20:22)]), scale.=TRUE)
 summary(pcagenpoke)
 biplot(pcagenpoke)
 ```
@@ -1262,7 +1277,7 @@ biplot(pcagenpoke)
 Ok cool, two principal components satisfy the Kaiser criterion. Let's take a look at which predictors influence these components...
 
 ```{r}
-round(pcagenpoke$rotation[,1:2], 2)
+round(pcagenpoke$rotation[,1:5], 2)
 ```
 This is looking pretty similar to the full dataset! But, let's see which pokemon each component is referring to.
 
@@ -1288,7 +1303,7 @@ The first 13 are legendary, this is a good sign. Let's see how PC1 correlates wi
 library(MASS)
 pcgenleg<-data.frame(pcagenpoke$x)
 pcgenleg[1:20,]
-leggenlda <- lda(factor(poke1$isLegendary)~pcgenleg[,1]+pcgenleg[,2],data=pcgenleg)
+leggenlda <- lda(factor(poke1$isLegendary)~pcgenleg[,1]+pcgenleg[,2]+pcgenleg[,3]+pcgenleg[,4]+pcgenleg[,5],data=pcgenleg)
 leggenlda
 ```
 
@@ -1300,7 +1315,7 @@ lda.class<-lda.pred$class
 table(lda.class,poke1$isLegendary)
 ```
 
-So LDA using PC1 and PC2 basically amounts to a naive classifier classifying everything "False" for isLegendary. Let's see if univariate LDA with PC1 only does any better.
+So LDA using the first five principal components favours the majority group when classifying isLegendary.
 
 ```{r}
 leggenlda1 <- lda(factor(poke1$isLegendary)~pcgenleg[,1],data=pcgenleg)
@@ -1313,20 +1328,22 @@ lda.class<-lda.pred$class
 table(lda.class,poke1$isLegendary)
 ```
 
-Yea, this is still a naive classifier, NOT VERY USEFUL!
+Using only PC1, we do even worse, NOT VERY USEFUL!
 
 Let's try a linear model, see if PC1 and PC2 are any good at predicting Pr_Male:
 
 ```{r}
-linmod<-lm(poke1$Pr_Male~pcgenleg[,1]+pcgenleg[,2])
+linmod<-lm(poke1$Pr_Male~pcgenleg[,1]+pcgenleg[,2]+pcgenleg[,3]+pcgenleg[,4]+pcgenleg[,5])
 summary(linmod)
-linmod<-lm(poke1$Pr_Male~pcgenleg[,1])
+linmod<-lm(poke1$Pr_Male~pcgenleg[,1]+pcgenleg[,4])
 summary(linmod)
-plot(pcgenleg[,1],poke1$Pr_Male)
-abline(linmod)
 ```
 
-Ok, so the second model is statistically significant. So let's try to interpret this now. The intercept on this linear model is 0.55, which is already above 50%. Oh man that graph looks like garbage. I don't think PCA really did anything here...
+Ok, so using backward selection, PC1 and PC4 meet the cutoff for predicting Pr_Male. Let's take another look at PC1 and PC4 and see if we can interpret this.
+
+```{r}
+round(pcagenpoke$rotation[,c(1,4)], 2)
+```
 
 
 ```{r}
