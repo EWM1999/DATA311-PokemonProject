@@ -23,32 +23,41 @@ knitr::opts_chunk$set(echo = TRUE)
 ##KNN
 
 ```{r}
+pokemon<-read.csv("pokemon_alopez247.csv")
 poke<-data.frame(pokemon)
-
 #remove unique identifiers
 poke<-poke[,-c(1,2)]
 ```
 
-This block removes all NA values for Pr_Male.
+This block removes all NA values for Pr_Male-> this is helpful for most analysis on Pr_Male.
 ```{r}
 #the new dataset poke2 has all na values fr Pr_Male removed
-poke2<-poke[which(hasGender=='True'),]
+poke2<-poke[which(poke$hasGender=='True'),]
 poke2
 ```
 
 
 ```{r}
-for(j in 1:ncol(poke2)){
-  if(!is.numeric(poke2[,j]) ){
-      poke2[,j]<-(as.numeric(poke2[,j]))
-  }
-}
-
-poke2$isLegendary <- (poke2$isLegendary - 1)
-poke2$hasMegaEvolution <- (poke2$hasMegaEvolution - 1)
-poke2$hasGender <- (poke2$hasGender - 1)
+poke2$isLegendary <- (as.numeric(poke2$isLegendary) - 1)
+poke2$hasMegaEvolution <- (as.numeric(poke2$hasMegaEvolution) - 1)
+poke2$hasGender <- (as.numeric(poke2$hasGender) - 1)
 ```
 
+```{r}
+library(fastDummies)
+results <- fastDummies::dummy_cols(poke2,  remove_first_dummy = TRUE)
+results
+```
+Removing repeats (without dummies)
+```{r}
+poke3<-results[, -c(1,2,12, 15, 16, 17,21)]
+head(poke3)
+poke2<-poke3
+```
+
+
+###KNN Regression on Pr_Male
+on to the regression!
 
 ```{r}
 library(ggplot2)
@@ -74,7 +83,7 @@ mean(mse)
 
 
 ```{r}
-poke4<-poke[which(hasGender=='True'),]
+poke4<-poke[which(poke$hasGender=='True'),]
 poke4<-data.frame(poke4[-c(2,14,16)])
 
 name<-list("Type_1", "Total", "HP", "Attack", "Defense", "Sp_Atk", "Sp_Def", "Speed", "Generation", "isLegendary", "Colour", "hasGender", "Egg_Group_1", "hasMegaEvolution", "Height_m", "Weight_kg", "Catch_Rate", "Body_Style")
@@ -136,8 +145,8 @@ lines(knnr10$pred, col="aquamarine4", lwd=1)
 ```
 
 ```{r}
-knnr30$R2Pred
-knnr30$PRESS
+knnr10$R2Pred
+knnr10$PRESS
 ```
 
 ```{r}
