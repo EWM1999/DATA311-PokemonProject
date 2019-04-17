@@ -1,42 +1,45 @@
 ---
-title: "KNN"
+title: "Modify Database so numeric"
 author: "Kat"
 date: '2019-03-26'
 output: html_document
 ---
 
+The following code references cran.r-packages on use of the fastDummies package
+https://cran.r-project.org/web/packages/fastDummies/vignettes/making-dummy-variables.html
 
-#looks like weight, speed, hieght
-# Generation 6 has a 100% female rate but no 100% male-> is the only gen here that does that
-# isLegendary has moew 100% male than 100% female- one 0.5%
-
-#i think colour is really interesting-> blue, ___?, and red are all higher percentage male while pink has higher percentage female (pink is a more stereotypically feminine color?)
-# fairy egg group 1 and 2 also has a higher percentage female
-#has mega evolution is higher percentage of being male
-#looks like higer percentage male means slightly taller height? (still mostly centered around 1m)
-##looks like higer percentage male means heavier?
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-##KNN
+
 ```{r}
+pokemon<-read.csv("pokemon_alopez247.csv")
 poke<-data.frame(pokemon)
 #remove unique identifiers
 poke<-poke[,-c(1,2)]
 ```
-This block removes all NA values for Pr_Male.
+
+This block removes all NA values for Pr_Male-> this is helpful for most analysis on Pr_Male.
 ```{r}
 #the new dataset poke2 has all na values fr Pr_Male removed
-poke2<-poke[which(hasGender=='True'),]
+poke2<-poke[which(poke$hasGender=='True'),]
 poke2
 ```
+
+
 ```{r}
-for(j in 1:ncol(poke2)){
-  if(!is.numeric(poke2[,j]) ){
-      poke2[,j]<-(as.numeric(poke2[,j]))
-  }
-}
-poke2$isLegendary <- (poke2$isLegendary - 1)
-poke2$hasMegaEvolution <- (poke2$hasMegaEvolution - 1)
-poke2$hasGender <- (poke2$hasGender - 1)
+poke2$isLegendary <- (as.numeric(poke2$isLegendary) - 1)
+poke2$hasMegaEvolution <- (as.numeric(poke2$hasMegaEvolution) - 1)
+poke2$hasGender <- (as.numeric(poke2$hasGender) - 1)
+```
+
+```{r}
+library(fastDummies)
+results <- fastDummies::dummy_cols(poke2,  remove_first_dummy = TRUE)
+results
+```
+Removing repeats (without dummies)
+```{r}
+poke3<-results[, -c(1,2,12, 15, 16, 17)]
+head(poke3)
 ```
