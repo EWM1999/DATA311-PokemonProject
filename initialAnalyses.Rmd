@@ -9,24 +9,27 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Project: Pokemon Dataset
+## SetUp
 
 ```{r}
-pokemon<-read.csv("pokemon_alopez247.csv")
-#plot(pokemon)
-#plot(pokemon$Name~pokemon$Type_1)
-#plot(pokemon$Name~. , data = pokemon, col = "blueviolet")
-#look at all those tasty graphs
+pokemon<-read.csv("data/pokemon_alopez247.csv")
 summary(pokemon)
 
 ```
+
+```{r}
+# plot(pokemon)
+# plot(pokemon$Name~pokemon$Type_1)
+# plot(pokemon$Name~. , data = pokemon, col = "blueviolet")
+```
+
 
 Let's get some insight into the data in general. For example, lets look at a graph of the number of pokemon per type.
 
 ```{r}
 library(ggplot2)
-type<-ggplot(pokemon, aes(pokemon$Type_1, fill = pokemon$Type_1)) + geom_histogram(stat="count", color = "black") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
-type
+nType<-ggplot(pokemon, aes(pokemon$Type_1, fill = pokemon$Type_1)) + geom_histogram(stat="count", color = "black") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+nType
 ```
 
 Before we get too far along, let's split up the data into training and testing sets
@@ -44,6 +47,10 @@ poke.train<-pokemon[train,]
 
 ```
 
+## Initial Modeling
+
+### Linear Model
+
 Let's try fitting a linear model with the response variable total and predictors HP, Attack, and Defense.
 
 ```{r}
@@ -59,35 +66,53 @@ mean(linmod$residuals^2)
 mean((poke.test[,5]-predicted)^2)
 ```
 
+### Heirarchical Clustering
 
-First attempt at Clustering
+This is a simple clustering to see how Each different method of clustering changes the id label (species type)
+
+Euclidean Distance:
 ```{r}
 eucdist<-dist(pokemon, method="euclidean")
-mandist<-dist(pokemon, method = "manhattan")
-clusPokemon<-hclust(eucdist, method = "single")
-clusPokemon2<-hclust(mandist, method = "single")
-plot(clusPokemon)
-plot(clusPokemon2)
-clusPokemonAvg<-hclust(eucdist, method = "average")
-clusPokemonAvg2<-hclust(mandist, method = "average")
-plot(clusPokemonAvg)
-plot(clusPokemonAvg2)
-clusComplete<-hclust(eucdist, method = "complete")
-clusComplete2<-hclust(mandist, method = "complete")
-plot(clusComplete)
-plot(clusComplete2)
+clusPokemonE<-hclust(eucdist, method = "single")
+plot(clusPokemonE, main="Euclidean Single")
 
-mancom <- cutree(clusComplete2, 2)
-euccom<-cutree(clusComplete, 2)
-manavg <- cutree(clusPokemonAvg2, 2)
-eucavg<-cutree(clusPokemonAvg, 2)
+clusPokemonAvgE<-hclust(eucdist, method = "average")
+plot(clusPokemonAvgE, main="Euclidean Average")
+
+clusCompleteE<-hclust(eucdist, method = "complete")
+plot(clusCompleteE, main="Euclidean Complete")
+```
+
+Manhattan Distance:
+```{r}
+mandist<-dist(pokemon, method="manhattan")
+clusPokemonM<-hclust(eucdist, method = "single")
+plot(clusPokemonM, main="Euclidean Single")
+
+clusPokemonAvgM<-hclust(eucdist, method = "average")
+plot(clusPokemonAvgM, main="Euclidean Average")
+
+clusCompleteM<-hclust(eucdist, method = "complete")
+plot(clusCompleteM, main="Euclidean Complete")
+```
+
+
+
+```{r}
+euccom<-cutree(clusCompleteE, 2)
+mancom<-cutree(clusCompleteM, 2)
+eucavg<-cutree(clusPokemonAvgE, 2)
+manavg<-cutree(clusPokemonAvgM, 2)
 table(mancom, euccom)
 table(manavg, eucavg)
 table(manavg, mancom)
 table(euccom, eucavg)
 ```
 
-@Barrett
+
+### Regressiom Tree
+
+#### Total
 
 See what a regression tree looks like using total as the predictor and hp, attack, defense, sp_atk, sp_def, and speed as predictors.
 ```{r}
@@ -131,6 +156,7 @@ pokeRF2
 ```
 
 
+#### isLegendary
 
 Now, let's try to predict if a pokemon is legendary. I would assume that pokemon with a high total are legendary and after taking a peek at the data, it looks like most legendary pokemon do not have a gender. Let's see if this holds true in general.
 
@@ -162,7 +188,7 @@ This plot shows that most legendary pokemon do not have a gender.
 
 Let see if there are any linear relations we can tease out. Name and number should have no effect on the data so I will exclude them from the start.
 
-Kmeans
+### Kmeans
 
 
 ```{r}
@@ -202,7 +228,7 @@ head(out[clusterGroups,])
 
 ```
 
-KNN classification
+### KNN classification
 
 ```{r}
 library(class)
@@ -211,7 +237,7 @@ table(poke.train$isLegendary, knnrun)
 ```
 
 
-Let's try analyzing via LDA
+### Linear Discrimenant Analysis
 
 ```{r}
 library(MASS)
@@ -240,17 +266,21 @@ Specificity(poke.train$isLegendary, predict(pokeqda)$class)
 F1_Score(poke.train$isLegendary, predict(pokeqda)$class)
 ```
 
-Now lets try logistic regression
+### Logistic Regression
 
 ```{r}
 simlog<-glm(factor(poke.train$isLegendary)~poke.train$hasGender+poke.train$Total, family = "binomial")
 table(predict(simlog, type = "response")>0.5, poke.train$isLegendary)
 ```
 
+## Exploration on Legendary Pokemon
 
-I'm going to see how many legendary pokemon there are per generation and per type. As a refresher here is the number of pokemon per type in this dataset
+### Per Generation and type
+
+How many legendary pokemon there are per generation and per type. As a refresher here is the number of pokemon per type in this dataset
 ```{r}
 library(ggplot2)
+
 type<-ggplot(pokemon, aes(pokemon$Type_1, fill = pokemon$Type_1)) + geom_histogram(stat="count", color = "black") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
 type
 ```
@@ -287,7 +317,6 @@ head(TheMyth[maxTotalL2,])
 ```
 
 
-Thanks to @Barret we can now subset the data
 
 ```{r}
 poke<-data.frame(pokemon)
@@ -295,6 +324,8 @@ poke1<-poke[which(hasGender=='True'),]
 attach(poke)
 head(poke1)
 ```
+
+## Exploration of Gender
 
 Let's see if there is a relationship between score and gender
 
