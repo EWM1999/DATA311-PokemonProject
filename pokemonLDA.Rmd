@@ -1,0 +1,47 @@
+---
+title: "pokemonLDA"
+author: "Kat"
+date: '2019-03-25'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+pokemon<-read.csv("pokemon_alopez247.csv")
+poke <- data.frame(pokemon, stringsAsFactors = TRUE)
+poke[is.na(poke)] <- 0
+poke$isLegendary<-(as.integer(factor(poke$isLegendary))-1)
+poke$hasGender<-(as.integer(factor(poke$hasGender))-1)
+poke<-poke[,-c(1,2)]
+
+
+set.seed(1995)
+train<-sample(1:nrow(poke),432)
+poke.train<-poke[train,]
+poke.test<-poke[-train,]
+
+```
+
+##LDA
+```{r}
+#install.packages(MASS)
+library(MASS)
+pkmlda<- lda(poke$hasMegaEvolution~poke$hasGender+poke$Type_1+poke$Total+poke$Generation+poke$Pr_Male+poke$isLegendary, data=poke, CV=TRUE)
+table(poke$hasMegaEvolution, pkmlda$class)
+```
+```{r}
+pkmlda<- lda(poke$isLegendary~poke$hasMegaEvolution+poke$Total+poke$hasGender+poke$Pr_Male, data=poke, CV=TRUE)
+table(poke$hasMegaEvolution, pkmlda$class)
+```
+```{r}
+pkmlda<- lda(poke$isLegendary~poke$hasGender+poke$Pr_Male, data=poke, CV=TRUE)
+table(poke$isLegendary, pkmlda$class)
+```
+
+```{r}
+pkmlda<- lda(poke$isLegendary~poke$Type_1+poke$Type_2, data=poke, CV=TRUE)
+table(poke$isLegendary, pkmlda$class)
+```
