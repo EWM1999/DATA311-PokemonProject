@@ -7,3 +7,7 @@
 *.html
 *.nb.html
 
+.DS_Store
+.vscode/*
+.vscode
+
