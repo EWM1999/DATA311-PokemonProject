@@ -5,25 +5,37 @@ date: '2019-03-26'
 output: html_document
 ---
 
+# A study in the effects of Gender
 
-#looks like weight, speed, hieght
-# Generation 6 has a 100% female rate but no 100% male-> is the only gen here that does that
-# isLegendary has moew 100% male than 100% female- one 0.5%
+It looks like weight, speed, hieght. Generation 6 has a 100% female rate but no 100% male-> is the only gen here that does that
+isLegendary has more 100% male than 100% female- one 0.5%
 
-#i think colour is really interesting-> blue, ___?, and red are all higher percentage male while pink has higher percentage female (pink is a more stereotypically feminine color?)
-# fairy egg group 1 and 2 also has a higher percentage female
-#has mega evolution is higher percentage of being male
-#looks like higer percentage male means slightly taller height? (still mostly centered around 1m)
-##looks like higer percentage male means heavier?
+* i think colour is really interesting-> blue, ___?, and red are all higher percentage male while pink has higher percentage female (pink is a more stereotypically feminine color?)
+* fairy egg group 1 and 2 also has a higher percentage female
+* has mega evolution is higher percentage of being male
+* looks like higer percentage male means slightly taller height? (still mostly centered around 1m)
+* looks like higer percentage male means heavier?
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-##KNN
+```{r}
+library(fastDummies)
+library(ggplot2)
+library(FNN)
+```
 
 ```{r}
-pokemon<-read.csv("pokemon_alopez247.csv")
+pokemon<-read.csv("data/pokemon_alopez247.csv")
+```
+
+
+##KNN
+
+### Data Processing
+
+```{r}
 poke<-data.frame(pokemon)
 #remove unique identifiers
 poke<-poke[,-c(1,2)]
@@ -31,81 +43,83 @@ poke<-poke[,-c(1,2)]
 
 This block removes all NA values for Pr_Male-> this is helpful for most analysis on Pr_Male.
 ```{r}
-#the new dataset poke2 has all na values fr Pr_Male removed
-poke2<-poke[which(poke$hasGender=='True'),]
-poke2
+# the new dataset poke has all na values fr Pr_Male removed
+# almost all legendary pokemon are removed
+poke<-poke[which(poke$hasGender=='True'),]
+head(poke)
 ```
 
-
+Converting string categorical labels to numeric
 ```{r}
-poke2$isLegendary <- (as.numeric(poke2$isLegendary) - 1)
-poke2$hasMegaEvolution <- (as.numeric(poke2$hasMegaEvolution) - 1)
-poke2$hasGender <- (as.numeric(poke2$hasGender) - 1)
+poke$isLegendary <- (as.numeric(poke$isLegendary) - 1)
+poke$hasMegaEvolution <- (as.numeric(poke$hasMegaEvolution) - 1)
+poke$hasGender <- (as.numeric(poke$hasGender) - 1)
 ```
 
+Convert Numerical columns to Dummy Columns
 ```{r}
-library(fastDummies)
-results <- fastDummies::dummy_cols(poke2,  remove_first_dummy = TRUE)
-results
+results <- fastDummies::dummy_cols(poke,  remove_first_dummy = TRUE)
+# Removing repeats (without dummies)
+poke<-results[, -c(1,2,12, 15, 16, 17,21)]
+head(poke)
 ```
-Removing repeats (without dummies)
-```{r}
-poke3<-results[, -c(1,2,12, 15, 16, 17,21)]
-head(poke3)
-poke2<-poke3
-```
-
 
 ###KNN Regression on Pr_Male
-on to the regression!
 
 ```{r}
-library(ggplot2)
-library(FNN)
-poke3<-data.frame(poke2[,-c(2, 14, 16)])
-plot(poke2$Pr_Male, type ="p")
-knnr20 <- knn.reg(poke2[,-c(2, 14, 16)], y=poke2$Pr_Male, k = 20)
+# remove HP, Catch_Rate
+poke3<-data.frame(poke[,-c(2, 14)])
+poke3
+```
+
+```{r}
+# removing gendered statistics (might add noise)
+X = poke3[,-c(8,9,10)]
+y = poke3$Pr_Male
+```
+
+
+#### K=20
+
+```{r}
+plot(poke$Pr_Male, type ="p")
+knnr20 <- knn.reg(X, y=y, k = 20)
 lines(knnr20$pred, col="green", lwd=1)
 ```
-knnreg by default returns cross validated results
+
+Looks like it primarily sits around 50% regardless... Verifying by CV results. knnreg by default returns cross validated results
 ```{r}
 knnr20$R2Pred
 knnr20$PRESS
 ```
 
 ```{r}
-mse<-NA
-for(i in 1:nrow(poke2)){
-  mse[i]<- (poke2$Pr_Male[i] - knnr20$pred[i])^2
-}
-mean(mse)
+mean((y - knnr20$pred[i])^2)
 ```
+MSE = 0.0614
+
+```{r}
+plot_diff = function(knn, X, y, colour){
+  name<-colnames(X)
+  
+  for(j in 1:length(name)){
+    plot(y~X[,j], xlab = name[j])
+    lines(knnr20$pred, col=colour, lwd=1)
+  }
+  
+}
+
+plot_diff(knnr20, X, y, "green")
+
+```
+Looks like Total, HP, Sp_Atk, Sp_Def, Speed, Generation, Height_m, and Weight_kg have some sort of relationship with Pr_Male. Height, Weight, and Speed might be explained by the animal kingdom views? It's a video game though....
+
+#### k = 30
 
 
 ```{r}
-poke4<-poke[which(poke$hasGender=='True'),]
-poke4<-data.frame(poke4[-c(2,14,16)])
-
-name<-list("Type_1", "Total", "HP", "Attack", "Defense", "Sp_Atk", "Sp_Def", "Speed", "Generation", "isLegendary", "Colour", "hasGender", "Egg_Group_1", "hasMegaEvolution", "Height_m", "Weight_kg", "Catch_Rate", "Body_Style")
-
-
-for(j in 1:ncol(poke3)){
-  plot(poke2$Pr_Male~poke4[,j], xlab = name[j])
-  lines(knnr20$pred, col="green", lwd=1)
-}
-
-```
-
-
-Using k = 30
-
-
-```{r}
-library(ggplot2)
-library(FNN)
-poke3<-data.frame(poke2[,-c(2, 14, 16)])
-plot(poke2$Pr_Male, type ="p")
-knnr30 <- knn.reg(poke2[,-c(2, 14, 16)], y=poke2$Pr_Male, k = 30)
+plot(poke$Pr_Male, type ="p")
+knnr30 <- knn.reg(poke[,-c(2, 14, 16)], y=poke$Pr_Male, k = 30)
 lines(knnr30$pred, col="blueviolet", lwd=1)
 ```
 
@@ -115,32 +129,20 @@ knnr30$PRESS
 ```
 
 ```{r}
-mse<-NA
-for(i in 1:nrow(poke2)){
-  mse[i]<- (poke2$Pr_Male[i] - knnr30$pred[i])^2
-}
-mean(mse)
+mean((y - knnr20$pred[i])^2)
 ```
 
 
 ```{r}
-
-for(j in 1:ncol(poke3)){
-  plot(poke2$Pr_Male~poke4[,j], xlab = name[j])
-  lines(knnr30$pred, col="green", lwd=1)
-}
-
+plot_diff(knnr30, X, y, "blueviolet")
 ```
 
 
-Then using k = 10
+#### k=10
 
 ```{r}
-library(ggplot2)
-library(FNN)
-poke3<-data.frame(poke2[,-c(2, 14, 16)])
-plot(poke2$Pr_Male, type ="p")
-knnr10 <- knn.reg(poke2[,-c(2, 14, 16)], y=poke2$Pr_Male, k = 10)
+plot(y, type ="p")
+knnr10 <- knn.reg(X, y=y, k = 10)
 lines(knnr10$pred, col="aquamarine4", lwd=1)
 ```
 
@@ -150,19 +152,10 @@ knnr10$PRESS
 ```
 
 ```{r}
-mse<-NA
-for(i in 1:nrow(poke2)){
-  mse[i]<- (poke2$Pr_Male[i] - knnr10$pred[i])^2
-}
-mean(mse)
+mean((y - knnr10$pred[i])^2)
 ```
 
 
 ```{r}
-
-for(j in 1:ncol(poke3)){
-  plot(poke2$Pr_Male~poke4[,j], xlab = name[j])
-  lines(knnr10$pred, col="darkcyan", lwd=1)
-}
-
+plot_diff(knnr10, X, y, "aquamarine4")
 ```
