@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-pokemon<-read.csv("pokemon_alopez247.csv")
+pokemon<-read.csv("data/pokemon_alopez247.csv")
 poke<-data.frame(pokemon)
 #remove unique identifiers
 poke<-poke[,-c(1,2)]
