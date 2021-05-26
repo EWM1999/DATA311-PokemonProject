@@ -1,6 +1,6 @@
 ---
 title: "Lasso"
-author: "Kat"
+author: "Kathryn Lecha"
 date: '2019-03-15'
 output: html_document
 ---
@@ -10,53 +10,57 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-pokemon<-read.csv("pokemon_alopez247.csv")
-#plot(pokemon)
-#plot(pokemon$Name~pokemon$Type_1)
-#plot(pokemon$Name~. , data = pokemon, col = "cyan")
-#look at all those tasty graphs
+pokemon<-read.csv("data/pokemon_alopez247.csv")
 ```
 
-##LASSO
+## LASSO
 
 Let's try using LASSO to remove predictors from the linear model
-
 
 
 ```{r}
 library(glmnet)
 set.seed(53342)
+
+lasso <- function(x, y, grid){
+  lassomod<-cv.glmnet(x,y, family="binomial", alpha=1, lambda=grid)
+  plot(lassomod)
+  plot(lassomod$glmnet.fit, label=TRUE, xvar="lambda")
+  lammin <- lassomod$lambda.min
+  lam1se <- lassomod$lambda.1se
+  lasimmin <- glmnet(x,y,alpha = 1, lambda=lammin)
+  lasim1se <- glmnet(x,y,alpha = 1, lambda=lam1se)
+}
+```
+
+### Predicting isLegendary
+
+```{r}
 pkmn<-data.frame(pokemon, stringsAsFactors = TRUE)
 pkmn[is.na(pkmn)] <- 0
 x <- data.matrix(pkmn)[,-13]
 y <- as.integer(as.logical(pkmn$isLegendary))
 grid<-exp(seq(-1.5,-8.25,length=100))
-lassomod<-cv.glmnet(x,y, family = "binomial", alpha=1, lambda = grid)
-plot(lassomod)
-plot(lassomod$glmnet.fit, label=TRUE, xvar="lambda")
-lammin <- lassomod$lambda.min
-lam1se <- lassomod$lambda.1se
-lasimmin <- glmnet(x,y,alpha = 1, lambda=lammin)
-lasim1se <- glmnet(x,y,alpha = 1, lambda=lam1se)
-#coef(lasimmin)
-#coef(lasim1se)
+lasso(x, y, grid)
 ```
+
+```{r}
+coef(lasimmin)
+coef(lasim1se)
+```
+
 
 Overall, the most important predictor is hasGender. This is not surprising and matches the rest of the analysis.
 However, it is interesting and worth point out that after Pr_Male is removed, it becomes a more more promenent predictor. This is because Pr_Male is in many ways repeat data from hasGender. Any pokemon without a gernder has no probablity of being male. 
+
+### Predicting hasGender
 
 ```{r}
 pkmn<-data.frame(pokemon, stringsAsFactors = TRUE)
 x <- data.matrix(pkmn)[,-c(15, 16)]
 y <- as.integer(as.logical(pkmn$hasGender))
 grid<-exp(seq(-2,-9,length=200))
-lassomod<-cv.glmnet(x,y, family = "binomial", alpha=1, lambda = grid)
-plot(lassomod)
-plot(lassomod$glmnet.fit, label=TRUE, xvar="lambda")
-lammin <- lassomod$lambda.min
-lam1se <- lassomod$lambda.1se
-lasimmin <- glmnet(x,y,alpha = 1, lambda=lammin)
-lasim1se <- glmnet(x,y,alpha = 1, lambda=lam1se)
+lasso(x, y, grid)
 ```
 
 Removed $pokemon\$Pr\_Male$ bc is dependent on $pokemon\$hasGender$ and minimum was $\lim(LogLambda->-infinity)$.
@@ -108,8 +112,6 @@ mean((linmod$residuals)^2)
 
 
 
-
-
 ##Fitting interactions
 Reference:
 https://strakaps.github.io/post/glinternet/
@@ -117,44 +119,62 @@ https://strakaps.github.io/post/glinternet/
 ```{r}
 #install.packages("glinternet")
 library("glinternet")
+library(dplyr)
+```
+
+
+ˆ
+```{r}
+getX <- function(poke){
+  # impute the median for the continuous variables
+  i_num <- sapply(poke, is.numeric)
+  poke[, i_num] <- apply(poke[, i_num], 2, function(x) ifelse(is.na(x), median(x, na.rm=T), x))
+  
+  # impute empty categories
+  poke[, !i_num] <- apply(poke[, !i_num], 2, function(x) {
+    x[x==""] <- "empty"
+    x[is.na(x)] <- "missing"
+    x
+  })
+  
+  # get the numLevels vector containing the number of categories
+  X <- poke
+  X[, !i_num] <- apply(X[, !i_num], 2, factor) %>% as.data.frame()
+  numLevels <- X %>% sapply(nlevels)
+  numLevels[numLevels==0] <- 1
+  
+  
+  # make the categorical variables take integer values starting from 0
+  X[, !i_num] <- apply(X[, !i_num], 2, function(col) as.integer(as.factor(col)) - 1)
+}
 ```
 
 ```{r}
-library(dplyr)
+getmainEffects <- function(coefs){
+  print(coefs$mainEffects)
 
+  idx_num <- (1:length(i_num))[i_num]
+  idx_cat <- (1:length(i_num))[!i_num]
+  print(names(numLevels)[idx_cat[coefs$mainEffects$cat]])
+  print(names(numLevels)[idx_num[coefs$mainEffects$cont]])
+  
+  print(coefs$mainEffectsCoef)
+}
+```
+
+
+
+### isLegendary
+```{r}
 poke <- data.frame(pokemon)
 
 y <- as.integer(as.logical(poke$isLegendary))
 
-
 #1,2 are unique and not useful
 poke <- poke[, -c(1,2, 13)]
+head(poke)
 
-poke
-
-# impute the median for the continuous variables
-i_num <- sapply(poke, is.numeric)
-poke[, i_num] <- apply(poke[, i_num], 2, function(x) ifelse(is.na(x), median(x, na.rm=T), x))
-
-# impute empty categories
-poke[, !i_num] <- apply(poke[, !i_num], 2, function(x) {
-  x[x==""] <- "empty"
-  x[is.na(x)] <- "missing"
-  x
-})
-
-# get the numLevels vector containing the number of categories
-X <- poke
-X[, !i_num] <- apply(X[, !i_num], 2, factor) %>% as.data.frame()
-numLevels <- X %>% sapply(nlevels)
-numLevels[numLevels==0] <- 1
-
-
-# make the categorical variables take integer values starting from 0
-X[, !i_num] <- apply(X[, !i_num], 2, function(col) as.integer(as.factor(col)) - 1)
-##R is such a WEIRD language
-#ike i guess its better than spending all day debugging in python and your problem is a double whitespace
-#but this is weird
+getX(poke)
 ```
 
 
@@ -169,17 +189,10 @@ coefs <- coef(cv_fit$glinternetFit)[[i_1Std]]
 coefs
 ```
 
-####Main Effects (part without interactions)
+####Main Effects (without interactions)
 
 ```{r}
-coefs$mainEffects
-
-idx_num <- (1:length(i_num))[i_num]
-idx_cat <- (1:length(i_num))[!i_num]
-names(numLevels)[idx_cat[coefs$mainEffects$cat]]
-names(numLevels)[idx_num[coefs$mainEffects$cont]]
-
-coefs$mainEffectsCoef
+getmainEffects(coefs)
 ```
 
 Main Effects are Total, Sp_Atk, Sp_Def, and Weight
@@ -189,7 +202,7 @@ Main Effects are Total, Sp_Atk, Sp_Def, and Weight
 coefs$interactions
 ```
 
-The $catcat tells us that there is no interaction between the categorical variables
+The $catcat$ tells us that there is no interaction between the categorical variables
 
 Three pairs of continuous variables have interactions:  
 $(1,5)$, $(1,6)$, and $(1,11)$
@@ -227,40 +240,15 @@ library(dplyr)
 poke <- data.frame(pokemon)
 
 poke<-poke[which(poke$hasGender=='True'),]
-
 y <- as.integer(poke$Total)
-
 
 #1,2 are unique and not useful
 #removed hasGender
 #using total as response
 poke <- poke[, -c(1,2, 5, 15)]
+head(poke)
 
-poke
-
-# impute the median for the continuous variables
-i_num <- sapply(poke, is.numeric)
-poke[, i_num] <- apply(poke[, i_num], 2, function(x) ifelse(is.na(x), median(x, na.rm=T), x))
-
-# impute empty categories
-poke[, !i_num] <- apply(poke[, !i_num], 2, function(x) {
-  x[x==""] <- "empty"
-  x[is.na(x)] <- "missing"
-  x
-})
-
-# get the numLevels vector containing the number of categories
-X <- poke
-X[, !i_num] <- apply(X[, !i_num], 2, factor) %>% as.data.frame()
-numLevels <- X %>% sapply(nlevels)
-numLevels[numLevels==0] <- 1
-
-
-# make the categorical variables take integer values starting from 0
-X[, !i_num] <- apply(X[, !i_num], 2, function(col) as.integer(as.factor(col)) - 1)
-##R is such a WEIRD language
-#ike i guess its better than spending all day debugging in python and your problem is a double whitespace
-#but this is weird
+getX(poke)
 ```
 
 
@@ -278,14 +266,7 @@ coefs
 ####Main Effects (part without interactions)
 
 ```{r}
-coefs$mainEffects
-
-idx_num <- (1:length(i_num))[i_num]
-idx_cat <- (1:length(i_num))[!i_num]
-names(numLevels)[idx_cat[coefs$mainEffects$cat]]
-names(numLevels)[idx_num[coefs$mainEffects$cont]]
-
-coefs$mainEffectsCoef
+getmainEffects(coefs)
 ```
 
 Main Effects are "HP", "Attack", "Defense", "Sp_Atk", "Sp_Def", "Speed", and "Catch_Rate"
@@ -309,9 +290,6 @@ MSE of 0.812088
 
 ```{r}
 poke <- data.frame(pokemon)
-
-poke<-poke[which(poke$hasGender=='True'),]
-
 y <- as.integer(poke$isLegendary)
 
 
@@ -319,32 +297,9 @@ y <- as.integer(poke$isLegendary)
 #removed hasGender
 #using islegendary as response
 poke <- poke[, -c(1,2, 13, 15)]
+head(poke)
 
-poke
-
-# impute the median for the continuous variables
-i_num <- sapply(poke, is.numeric)
-poke[, i_num] <- apply(poke[, i_num], 2, function(x) ifelse(is.na(x), median(x, na.rm=T), x))
-
-# impute empty categories
-poke[, !i_num] <- apply(poke[, !i_num], 2, function(x) {
-  x[x==""] <- "empty"
-  x[is.na(x)] <- "missing"
-  x
-})
-
-# get the numLevels vector containing the number of categories
-X <- poke
-X[, !i_num] <- apply(X[, !i_num], 2, factor) %>% as.data.frame()
-numLevels <- X %>% sapply(nlevels)
-numLevels[numLevels==0] <- 1
-
-
-# make the categorical variables take integer values starting from 0
-X[, !i_num] <- apply(X[, !i_num], 2, function(col) as.integer(as.factor(col)) - 1)
-##R is such a WEIRD language
-#ike i guess its better than spending all day debugging in python and your problem is a double whitespace
-#but this is weird
+getX(poke)
 ```
 
 
@@ -362,14 +317,7 @@ coefs
 ####Main Effects (part without interactions)
 
 ```{r}
-coefs$mainEffects
-
-idx_num <- (1:length(i_num))[i_num]
-idx_cat <- (1:length(i_num))[!i_num]
-names(numLevels)[idx_cat[coefs$mainEffects$cat]]
-names(numLevels)[idx_num[coefs$mainEffects$cont]]
-
-coefs$mainEffectsCoef
+getmainEffects(coefs)
 ```
 
 Main Effects are "HP", "Attack", "Defense", "Sp_Atk", "Sp_Def", "Speed", and"Catch_Rate"
