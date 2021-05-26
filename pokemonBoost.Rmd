@@ -10,12 +10,14 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-pokemon<-read.csv("pokemon_alopez247.csv")
+pokemon<-read.csv("data/pokemon_alopez247.csv")
 poke <- data.frame(pokemon)
+
+# change isLegendary to numeric category
 poke$isLegendary<-(as.integer(factor(poke$isLegendary))-1)
 poke<-poke[,-c(1,2)]
 
-
+# split into training and testing dagta sets
 set.seed(1995)
 train<-sample(1:nrow(poke),432)
 poke.test<-poke[-train,]
@@ -24,8 +26,8 @@ poke.train<-poke[train,]
 
 ```{r}
 library(glmnet)
- library(gbm)
- library(gclus)
+library(gbm)
+library(gclus)
 ```
 
 ## Boosting
@@ -40,7 +42,7 @@ Let's try using boosting on the pokemon data to predict if Legendary
 ```
 
 
-Splitting the data up into training and testing data....
+looks like it might be over fitting. Let's try splitting the data up into training and testing data....
 ```{r}
 set.seed(54390)
 pboost <- gbm(isLegendary~., distribution="bernoulli", data=poke.train, n.trees=5000, interaction.depth=1)
