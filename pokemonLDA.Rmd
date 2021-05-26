@@ -10,7 +10,15 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-pokemon<-read.csv("pokemon_alopez247.csv")
+#install.packages(MASS)
+library(MASS)
+```
+
+##LDA
+
+### Data Processing
+```{r}
+pokemon<-read.csv("data/pokemon_alopez247.csv")
 poke <- data.frame(pokemon, stringsAsFactors = TRUE)
 poke[is.na(poke)] <- 0
 poke$isLegendary<-(as.integer(factor(poke$isLegendary))-1)
@@ -25,17 +33,20 @@ poke.test<-poke[-train,]
 
 ```
 
-##LDA
+### Training
 ```{r}
-#install.packages(MASS)
-library(MASS)
 pkmlda<- lda(poke$hasMegaEvolution~poke$hasGender+poke$Type_1+poke$Total+poke$Generation+poke$Pr_Male+poke$isLegendary, data=poke, CV=TRUE)
 table(poke$hasMegaEvolution, pkmlda$class)
 ```
+has pretty good cross validated results....
+
+
 ```{r}
 pkmlda<- lda(poke$isLegendary~poke$hasMegaEvolution+poke$Total+poke$hasGender+poke$Pr_Male, data=poke, CV=TRUE)
 table(poke$hasMegaEvolution, pkmlda$class)
 ```
+
+
 ```{r}
 pkmlda<- lda(poke$isLegendary~poke$hasGender+poke$Pr_Male, data=poke, CV=TRUE)
 table(poke$isLegendary, pkmlda$class)
