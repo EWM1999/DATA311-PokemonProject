@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 See what a regression tree looks like using total as the predictor and hp, attack, defense, sp_atk, sp_def, and speed as predictors.
 ```{r}
-pokemon<-read.csv("pokemon_alopez247.csv")
+pokemon<-read.csv("data/pokemon_alopez247.csv")
 library(tree)
 poke<-data.frame(pokemon)
 attach(poke)

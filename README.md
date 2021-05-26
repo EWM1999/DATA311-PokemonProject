@@ -1,45 +1,21 @@
-# Pokémon: The Myths and The Legends 
-Final Project for Data 311 - Machine Learning. This was considered the top project in the 2019 year. The project goal was to analyze some amount of data using various machine learning models and techniques in R to come to some deeper understanding about the given data.
+# Data311-PokemonProject
+#### Written by Barret Jackson, Kathryn Lecha, Emily Medema, and Lauren StClair
 
-## Contributors:
-* **Barret Jackson** - [bearitt](https://github.com/bearitt)
-* **Emily Medema** - [emedema](https://github.com/emedema)
-* **Kathryn Lecha** - [kzlecha](https://github.com/kzlecha)
-* **Lauren St.Clair** - [laurenstclair](https://github.com/laurenstclair)
+This project was cowritten by the four above individuals as a final project for a Machine Learning course at UBC Okanagan. 
+The dataset was sourced from Kaggle as the Pokemon Dataset for Machine Learning and Datamining, collected by Asier López Zorrilla.
 
-## Data Source
-The dataset examined, accessed from Kaggle and collected by [alopez247](https://www.kaggle.com/alopez247), is [Pokémon for Data Mining and Machine Learning](https://www.kaggle.com/alopez247/pokemon), a set of Pokémon with related statistics and descriptors.
-The set contains 721 observations and 23 variables, several of which are categorical.
+https://www.kaggle.com/alopez247/pokemon
 
-Of the numerical predictors, the majority are the Pokémon statistics, such as *Total*, *Attack*, *Defense*, *HP*, while others relate to body descriptors such as *Weight_kg* and *Height_m*.
-The other numerical predictor, *Pr_Male* is indicative of the probability that when a Pokémon is caught it will be male.
-Finally, *Catch_Rate* is a number bounded by 3 and 255 that refers to the ease of catching a Pokémon, where the higher the catch rate, the easier it is to catch the Pokémon.
-The statistics of Pokémon were analyzed through a variety of models attempting to predict whether or not a Pokémon is of the legendary type. In order to predict legendary status, the *isLegendary* and *Total* variables were tested against a range of predictors within the Pokémon dataset.
 
-## Research Focus
-1. Analysis of legendary pokemon
-  * What is the difference between a legendary pokemon and a non-legendary pokemon?
-  * What attributes determine this
-  * Which machine learning models preform better in modeling this relationship?
-2. Probability of being Male
-  * How does the probablity of being male affect other statistical properties about a species of pokemon?
-  * How does having a gender affect the statistics of a pokemon?
-  
-## Conclusions
-It was determined through analyses of the Pokémon dataset that Pokémon can be surprisingly progressive, 
-however, there remain residual aspects of sexism specific to gendering and fundamental statistics.
-Through analyses, the investigation suggested that the statistics of Pokémon can help in predicting a Pokémon’s gender and as well its likelihood of being legendary.
-It was found that Pokémon with the highest probability of being female, according to *Pr_Male*, had the lowest *Attack* and *Defense* values.
-Similarly, it appears that there is a correlation between catchability and gender, such that Pokémon with lower statistics like *Attack* or *Defense*
-are easier to catch and more likely to be female.
+All code directly taken from a kaggle kernal on this dataset is sourced in the report.
+Any code referenced in the analysis outside of the course material is credited within the code.
 
-It could be said that this bias towards males could be a product of Pokémon’s original target audence.
-Pokémon was released in 1996, during a time when video games were primarily targeted at males.
-While the distinction of “stronger” traits ascribed to male Pokémon may be attributed to layman views of sex determined roles in the animal kingdom,
-it may also be a product of the game developers own internalized biases.
+Any viewer is not allowed to copy this code under any circumstances, unless all four contributors agree to share the work.
+Any use of the code, analysis, or anything found in this GitHub repository is Academic Misconduct, and is in violation of the agreements made by the above individuals. The individuals contributing to this project are not to be held accountable for any violation of these.
 
-Where Pokémon may be considered more progressive is in its depiction of the legendary Pokémon type, which are the “strongest” types of the Pokémon universe.
-While there is a functional reason for the majority of legendary Pokémon being genderless, since it disallows for the ability to breed,
-the representation of non-binary gender identity is progressive and incredibly important as game designers could have simply have made all
-legendary Pokémon one gender.
 
+### About the Report
+
+This dataset is an analysis of the Pokemon dataset via Machine Learning techniques. In particular, this group focused on the predictor variables isLegendary and hasGender. To extend the gender analysis, there are some analyses on Pr_Male.
+
+The report itself is written for a reader with statstical background.

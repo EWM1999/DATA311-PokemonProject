@@ -8,7 +8,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-data = read.csv("pokemon_alopez247.csv", header=T)
+data = read.csv("data/pokemon_alopez247.csv", header=T)
 ```
 
 #Neural Networks

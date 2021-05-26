@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 #laurenedits
 
 ```{r}
-data = read.csv("pokemon_alopez247.csv", header=T)
+data = read.csv("data/pokemon_alopez247.csv", header=T)
 ```
 
 ```{r}
@@ -21,7 +21,7 @@ summary(data)
 
 #Principle Component Analysis
 ```{r}
-pokemon <- read.csv("~/pokemon_alopez247.csv", stringsAsFactors = FALSE)
+pokemon <- read.csv("data/pokemon_alopez247.csv", stringsAsFactors = FALSE)
 #remove NA from dataset
 cleanPoke <- na.omit(pokemon)
 pcPoke <- prcomp(as.matrix(cleanPoke[,c(5:8,16)]), scale. = TRUE)

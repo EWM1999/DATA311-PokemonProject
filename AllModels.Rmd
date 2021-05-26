@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ``` 
 
 ```{r}
-pokemon<-read.csv("pokemon_alopez247.csv")
+pokemon<-read.csv("data/pokemon_alopez247.csv")
 ```
 
 The following models will require the libraries listed below,
@@ -338,7 +338,7 @@ F1_Score(poke.train$isLegendary, predict(pokelda)$class)
 
 
 ```{r}
-pokemon<-read.csv("pokemon_alopez247.csv")
+pokemon<-read.csv("data/pokemon_alopez247.csv")
 poke <- data.frame(pokemon, stringsAsFactors = TRUE)
 poke[is.na(poke)] <- 0
 poke$isLegendary<-(as.integer(factor(poke$isLegendary))-1)
@@ -352,7 +352,7 @@ poke.test<-poke[-train,]
 
 ##LDA 3
 ```{r}
-pokemon<-read.csv("pokemon_alopez247.csv")
+pokemon<-read.csv("data/pokemon_alopez247.csv")
 poke <- data.frame(pokemon, stringsAsFactors = TRUE)
 poke[is.na(poke)] <- 0
 poke$isLegendary<-(as.integer(factor(poke$isLegendary))-1)
@@ -402,7 +402,7 @@ table(predict(simlog, type = "response")>0.5, poke.train$isLegendary)
 ```
 
 ```{r}
-pokemon<-read.csv("pokemon_alopez247.csv")
+pokemon<-read.csv("data/pokemon_alopez247.csv")
 ```
 
 Turning all data into numerics
@@ -676,7 +676,7 @@ LogReg performs just as poorly as LDA. It seems that even though PC2 is not near
 library(gclus)
 library(nnet)
 library(NeuralNetTools)
-pokemon<-read.csv("pokemon_alopez247.csv")
+pokemon<-read.csv("data/pokemon_alopez247.csv")
 set.seed(1995)
 train<-sample(1:721,505)
 trainset<-poke[train,]
@@ -1227,45 +1227,6 @@ colors = c("1","2","3","4","5","6")
 ggplot(pokedat, aes(x=pokedat$Pr_Male, group=pokedat$Generation, fill=colors[Generation]))+
   geom_histogram(position="dodge",binwidth=0.25)+theme_bw()
 ```
-<!-- See what a regression tree looks like using total as the predictor and hp, attack, defense, sp_atk, sp_def, and speed as predictors. -->
-<!-- ```{r} -->
-<!-- pokemon<-read.csv("pokemon_alopez247.csv") -->
-<!-- library(tree) -->
-<!-- poke<-data.frame(pokemon) -->
-<!-- attach(poke) -->
-<!-- pocl<-tree(Total~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke) -->
-<!-- plot(pocl) -->
-<!-- text(pocl) -->
-<!-- ``` -->
-
-<!-- Now let's try pruning it back -->
-
-<!-- ```{r} -->
-<!-- cv.pocl<-cv.tree(pocl, FUN=prune.tree) -->
-<!-- plot(cv.pocl,type="b") -->
-<!-- p.pocl<-prune.tree(pocl,best=10) -->
-<!-- plot(p.pocl) -->
-<!-- text(p.pocl) -->
-<!-- summary(p.pocl) -->
-<!-- ``` -->
-
-<!-- Looks like pruning was unnecessary since the lowest MSE is with 12 nodes... -->
-
-<!-- How about with bagging... -->
-
-<!-- ```{r} -->
-<!-- library(randomForest) -->
-<!-- set.seed(1995) -->
-<!-- pokebag<-randomForest(Total~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke,mtry=6,importance=FALSE) -->
-<!-- pokebag -->
-<!-- ``` -->
-<!-- Random forest where m=3 -->
-<!-- ```{r} -->
-<!-- pokeRF<-randomForest(Total~HP+Attack+Defense+Sp_Atk+Sp_Def+Speed,data=poke,mtry=3,importance=TRUE) -->
-<!-- pokeRF -->
-<!-- ``` -->
-
-
 
 ##PCA
 
