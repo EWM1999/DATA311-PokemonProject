@@ -1,0 +1,161 @@
+---
+title: "KNN"
+author: "Kat"
+date: '2019-03-26'
+output: html_document
+---
+
+# A study in the effects of Gender
+
+It looks like weight, speed, hieght. Generation 6 has a 100% female rate but no 100% male-> is the only gen here that does that
+isLegendary has more 100% male than 100% female- one 0.5%
+
+* i think colour is really interesting-> blue, ___?, and red are all higher percentage male while pink has higher percentage female (pink is a more stereotypically feminine color?)
+* fairy egg group 1 and 2 also has a higher percentage female
+* has mega evolution is higher percentage of being male
+* looks like higer percentage male means slightly taller height? (still mostly centered around 1m)
+* looks like higer percentage male means heavier?
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(fastDummies)
+library(ggplot2)
+library(FNN)
+```
+
+```{r}
+pokemon<-read.csv("data/pokemon_alopez247.csv")
+```
+
+
+##KNN
+
+### Data Processing
+
+```{r}
+poke<-data.frame(pokemon)
+#remove unique identifiers
+poke<-poke[,-c(1,2)]
+```
+
+This block removes all NA values for Pr_Male-> this is helpful for most analysis on Pr_Male.
+```{r}
+# the new dataset poke has all na values fr Pr_Male removed
+# almost all legendary pokemon are removed
+poke<-poke[which(poke$hasGender=='True'),]
+head(poke)
+```
+
+Converting string categorical labels to numeric
+```{r}
+poke$isLegendary <- (as.numeric(poke$isLegendary) - 1)
+poke$hasMegaEvolution <- (as.numeric(poke$hasMegaEvolution) - 1)
+poke$hasGender <- (as.numeric(poke$hasGender) - 1)
+```
+
+Convert Numerical columns to Dummy Columns
+```{r}
+results <- fastDummies::dummy_cols(poke,  remove_first_dummy = TRUE)
+# Removing repeats (without dummies)
+poke<-results[, -c(1,2,12, 15, 16, 17,21)]
+head(poke)
+```
+
+###KNN Regression on Pr_Male
+
+```{r}
+# remove HP, Catch_Rate
+poke3<-data.frame(poke[,-c(2, 14)])
+poke3
+```
+
+```{r}
+# removing gendered statistics (might add noise)
+X = poke3[,-c(8,9,10)]
+y = poke3$Pr_Male
+```
+
+
+#### K=20
+
+```{r}
+plot(poke$Pr_Male, type ="p")
+knnr20 <- knn.reg(X, y=y, k = 20)
+lines(knnr20$pred, col="green", lwd=1)
+```
+
+Looks like it primarily sits around 50% regardless... Verifying by CV results. knnreg by default returns cross validated results
+```{r}
+knnr20$R2Pred
+knnr20$PRESS
+```
+
+```{r}
+mean((y - knnr20$pred[i])^2)
+```
+MSE = 0.0614
+
+```{r}
+plot_diff = function(knn, X, y, colour){
+  name<-colnames(X)
+  
+  for(j in 1:length(name)){
+    plot(y~X[,j], xlab = name[j])
+    lines(knnr20$pred, col=colour, lwd=1)
+  }
+  
+}
+
+plot_diff(knnr20, X, y, "green")
+
+```
+Looks like Total, HP, Sp_Atk, Sp_Def, Speed, Generation, Height_m, and Weight_kg have some sort of relationship with Pr_Male. Height, Weight, and Speed might be explained by the animal kingdom views? It's a video game though....
+
+#### k = 30
+
+
+```{r}
+plot(poke$Pr_Male, type ="p")
+knnr30 <- knn.reg(poke[,-c(2, 14, 16)], y=poke$Pr_Male, k = 30)
+lines(knnr30$pred, col="blueviolet", lwd=1)
+```
+
+```{r}
+knnr30$R2Pred
+knnr30$PRESS
+```
+
+```{r}
+mean((y - knnr20$pred[i])^2)
+```
+
+
+```{r}
+plot_diff(knnr30, X, y, "blueviolet")
+```
+
+
+#### k=10
+
+```{r}
+plot(y, type ="p")
+knnr10 <- knn.reg(X, y=y, k = 10)
+lines(knnr10$pred, col="aquamarine4", lwd=1)
+```
+
+```{r}
+knnr10$R2Pred
+knnr10$PRESS
+```
+
+```{r}
+mean((y - knnr10$pred[i])^2)
+```
+
+
+```{r}
+plot_diff(knnr10, X, y, "aquamarine4")
+```
